@@ -20,17 +20,6 @@ export default function createStoreWithSignals<T extends object>(
       },
       set(newVal) {
         store.update(path as any, newVal);
-        currentSignal = createSignal(newVal, path);
-        if (newVal === null || typeof newVal !== 'object') {
-          currentSignal = newVal;
-          return;
-        }
-        signalsMap.set(path, currentSignal);
-        if (typeof target === 'object') {
-          for (const key in currentSignal) {
-            target[key] = currentSignal[key];
-          }
-        }
       },
     });
     defineProperty?.(target)
