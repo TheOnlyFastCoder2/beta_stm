@@ -12,11 +12,9 @@ export default function createStoreWithSignals<T extends object>(
   const signalsMap = new Map<string, any>();
 
   function defineVProp(target: any, path: string, valueGetter?: () => any) {
-    let currentSignal: any;
-
     const signal = Object.defineProperty(target, 'v', {
       get() {
-        return (currentSignal = valueGetter ? valueGetter() : store.get(path as any));
+        return valueGetter ? valueGetter() : store.get(path as any);
       },
       set(newVal) {
         store.update(path as any, newVal);

@@ -1,9 +1,11 @@
 import $ from './App.module.css';
 import { useSignalStore } from './lib/react';
 import Button from './shared/Button';
+import QueryExample from './shared/QueryExample';
+import Slider from './shared/Slider';
 
 function App() {
-  const { $: store } = useSignalStore({ count: 0 });
+  const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
 
   return (
     <div className={$.App}>
@@ -12,56 +14,17 @@ function App() {
       </Button>
       <Slider />
       <Slider />
+      <QueryExample/>
     </div>
   );
 }
 
-function Slider() {
-  const { $: store, useComputed } = useSignalStore({
-    percent: 0,
-    prevPercent: 0,
-  });
-
-  const ref = useComputed<HTMLDivElement>(({ current: el }) => {
-    el.style.width = `${store.percent.v}%`;
-  });
-
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const startX = e.clientX;
-    const startPercent = store.percent.v;
-    const track: HTMLDivElement = e.currentTarget.closest(`.${$.track}`)!;
-
-    const onMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-      const trackWidth = track.offsetWidth;
-      const deltaPercent = (deltaX / trackWidth) * 100;
-      const newPercent = Math.min(100, Math.max(0, startPercent + deltaPercent));
-      store.percent.v = newPercent;
-      document.body.style.cursor = 'grabbing';
-    };
-
-    const onUp = () => {
-      store.prevPercent.v = store.percent.v;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = 'default';
-    };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
-
-  return (
-    <>
-      <div className={$.Progress}>
-        <div className={$.track}>
-          <div className={$.indicator} ref={ref}>
-            <div className={$.grabber} onMouseDown={onMouseDown} />
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 export default App;
+
+// const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
+
+/*
+  - Если ты просто вернёшь store напрямую: В React ререндеры не увидят изменений поля count.v, потому что React сам по себе не отслеживает обычные объекты, а сигналы — это внешняя реактивная система.
+  - Поле .c (React-компонент) нужен, чтобы React «подписался» на сигнал и ререндерил кнопку.
+  - Если мы делаем { $: store }, мы создаём новый объект, который React фактически воспринимает как стабильный объект со ссылкой, и потом можем обращаться к .c напрямую
+*/
