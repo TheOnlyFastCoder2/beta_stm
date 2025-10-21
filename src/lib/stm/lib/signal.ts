@@ -5,7 +5,7 @@ import createObservableState from './observable';
 export default function createStoreWithSignals<T extends object>(
   data: T,
   middlewares: Middleware<T>[] = [],
-  defineProperty?: (signal: Signal<T>) => void,
+  defineProperty?: (signal: Signal<T>) => void
 ): StoreWithSignals<T> {
   const store = createObservableState(data, middlewares) as StoreWithSignals<T>;
   const pathCache = new Map<string, { parentPath: string; key: string }>();
@@ -22,7 +22,7 @@ export default function createStoreWithSignals<T extends object>(
         store.update(path as any, newVal);
       },
     });
-    defineProperty?.(target)
+    defineProperty?.(target);
     signal._metaPath = path;
     signalsMap.set(path, signal);
   }
@@ -135,8 +135,10 @@ export default function createStoreWithSignals<T extends object>(
       }
     }
   }
+  
   const originUpdate = store.update;
   const originUpdateQuiet = store.update.quiet;
+  const originDestroy = store.destroy;
 
   store.update = ((accessor, cbOrVal) => {
     originUpdate(accessor, cbOrVal);
@@ -154,7 +156,7 @@ export default function createStoreWithSignals<T extends object>(
     pathCache.clear();
     store.$ = createSignal(newData, '');
   };
-  const originDestroy = store.destroy;
+
   store.destroy = () => {
     originDestroy?.();
     signalsMap.clear();
