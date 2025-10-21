@@ -1,0 +1,39 @@
+.Button {
+  padding: 10px 60px;
+  font-size: 16px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  background: none;
+  .Button_wrapper {
+    position: absolute;
+    inset: 0;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    border-radius: 50%;
+    &.animation {
+      background: radial-gradient(circle, rgb(255, 255, 255, 0.5), rgb(255, 255, 255, 1) 0%);
+      animation: Bubble 600ms linear;
+    }
+  }
+}
+
+
+
+@keyframes Bubble {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(10);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
