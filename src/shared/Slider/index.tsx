@@ -54,14 +54,13 @@ export default function Slider() {
   };
 
   return (
-    <div className={$.Slider}>
-      <div className={$.track}>
-        <div className={$.indicator} ref={ref}>
-          <div
-            className={$.grabber}
-            onMouseDown={onGrabberDown}
-            onTouchStart={onGrabberDown}
-          />
+    <div>
+      <h1>{ store.percent.c }</h1>
+      <div className={$.Slider}>
+        <div className={$.track}>
+          <div className={$.indicator} ref={ref}>
+            <div className={$.grabber} onMouseDown={onGrabberDown} onTouchStart={onGrabberDown} />
+          </div>
         </div>
       </div>
     </div>
