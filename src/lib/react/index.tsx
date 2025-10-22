@@ -163,7 +163,7 @@ export function createSignal<T extends object>(
   return store;
 }
 
-export  function useSignalStore<T extends object>(initialData: T): ReactSignalsStore<T> & ReactStore<T> {
+export function useSignalStore<T extends object>(initialData: T): ReactSignalsStore<T> & ReactStore<T> {
   const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
 
   if (!ref.current) {
@@ -180,6 +180,38 @@ export  function useSignalStore<T extends object>(initialData: T): ReactSignalsS
           });
         }
       }
+      if (Array.isArray(signal.v)) {
+        const originMap = (signal as any).map;
+
+        // console.log(originMap) // тут он есть
+        Object.defineProperty(signal, 'map', {
+          value: (renderFn: (item: Signal<any>, i: number) => React.ReactNode) => {
+            const componentCache = new Map<string, React.ReactElement>();
+
+            const Component = React.memo(() => {
+              store.useField(signal._metaPath as any);
+              return originMap.call(signal, (item: Signal<any>, i: number) => {
+                const prev = componentCache.get(item._metaPath);
+
+                if (prev && (prev.props as any).value === item.v) {
+                  return prev;
+                }
+
+                const SignalComponent = React.memo((_: {value:any}) => {
+                  store.useField(item._metaPath as any);
+                  return renderFn(item, i) as any;
+                });
+
+                SignalComponent .displayName = item._metaPath;
+                const element = <SignalComponent key={i} value={item.v} />;
+                componentCache.set(item._metaPath, element);
+                return element;
+              });
+            });
+            return <Component />;
+          },
+        });
+      }
     });
     ref.current = store;
   }
@@ -189,7 +221,5 @@ export  function useSignalStore<T extends object>(initialData: T): ReactSignalsS
     ref.current = null;
   }, []);
 
-
   return ref.current;
 }
-

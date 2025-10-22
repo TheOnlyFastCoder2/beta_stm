@@ -20,6 +20,14 @@ export default function createStoreWithSignals<T extends object>(
         store.update(path as any, newVal);
       },
     });
+    Object.defineProperty(target, 'q', {
+      get() {
+        return valueGetter ? valueGetter() : store.get(path as any);
+      },
+      set(newVal) {
+        store.update.quiet(path as any, newVal);
+      },
+    });
     defineProperty?.(target);
     signal._metaPath = path;
     signalsMap.set(path, signal);
@@ -133,19 +141,23 @@ export default function createStoreWithSignals<T extends object>(
       }
     }
   }
-  
+
   const originUpdate = store.update;
   const originUpdateQuiet = store.update.quiet;
   const originDestroy = store.destroy;
 
   store.update = ((accessor, cbOrVal) => {
-    originUpdate(accessor, cbOrVal);
+    const idUpdated = originUpdate(accessor, cbOrVal);
+    if (!idUpdated) return false;
     updateSignals(accessor);
+    return true;
   }) as ObservableState<T>['update'];
 
   store.update.quiet = (accessor, cbOrVal) => {
-    originUpdateQuiet(accessor, cbOrVal);
+    const idUpdated = originUpdateQuiet(accessor, cbOrVal);
+    if (!idUpdated) return false;
     updateSignals(accessor);
+    return true;
   };
 
   store.setStore = (newData: T) => {

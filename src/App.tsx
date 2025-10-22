@@ -3,18 +3,20 @@ import { useSignalStore } from './lib/react';
 import Button from './shared/Button';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';
+import { TodoApp } from './shared/Todo';
 
 function App() {
   const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
 
   return (
     <div className={$.App}>
-      <Button onClick={() => store.count.v++} className={$.MyButton}>
+      {/* <Button onClick={() => store.count.v++} className={$.MyButton}>
         {store.count.c}
       </Button>
       <Slider />
       <Slider />
-      <QueryExample/>
+      <QueryExample /> */}
+      <TodoApp/>
     </div>
   );
 }

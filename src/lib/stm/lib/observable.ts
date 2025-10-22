@@ -58,10 +58,11 @@ export default function createObservableState<T extends object>(
   store.shouldSkipValueUpdate = shouldSkipValueUpdate;
   const coreUpdate: CoreUpdate = (newVal, oldVal, path, options) => {
     const isSkipUpdate = shouldSkipValueUpdate(oldVal, newVal, path);
-    if (isSkipUpdate.bool) return;
+    if (isSkipUpdate.bool) return false;
     setValue(path, data, newVal);
-    if (options?.quietUpdate) return;
+    if (options?.quietUpdate) return true;
     notifyInvalidate(path, subscribers, pathSubscribers, data);
+    return true;
   };
 
   function startBatch() {
@@ -140,7 +141,7 @@ export default function createObservableState<T extends object>(
       setValue(path, data, newVal);
       return;
     }
-    coreUpdate(newVal, oldVal, path, {
+    return coreUpdate(newVal, oldVal, path, {
       quietUpdate: options?.quiet,
     });
   }) as ObservableState<T>['update'];

@@ -34,6 +34,7 @@ export type CoreUpdate = (
   }
 ) => void;
 
+export type isUpdated = boolean;
 export type PathSubscribers = Map<string, Set<SubsMetaData>>;
 export type Subscribes = Set<Omit<SubsMetaData, 'path'>>;
 export type UnSubscribe = () => void;
@@ -41,7 +42,7 @@ export type Updater<T extends object> = <P extends Accessor<T>, E extends Extrac
   accessor: P,
   cbOrVal: E | ((v: E) => E),
   options?: { quiet?: boolean }
-) => void;
+) => isUpdated;
 export type CacheKey<T> = Accessor<T> | string;
 
 export type Middleware<T extends object> = (next: Updater<T>, store: ObservableState<T>) => Updater<T>;
@@ -56,9 +57,11 @@ export interface ObservableState<T extends object> {
     }
   ) => UnSubscribe;
   update: Updater<T> & {
-    quiet: <P extends Accessor<T>, E extends ExtractPathReturn<T, P>>(accessor: P, cbOrVal: E | ((v: E) => E)) => void;
+    quiet: <P extends Accessor<T>, E extends ExtractPathReturn<T, P>>(
+      accessor: P,
+      cbOrVal: E | ((v: E) => E)
+    ) => isUpdated;
   };
-
   subscribe: (callback: (data: T) => void, cacheKeys?: CacheKey<T>[]) => UnSubscribe;
   get: <P extends Accessor<T>>(accessor: P) => ExtractPathReturn<T, P>;
   resolvePath: <P extends Accessor<T>>(accessor: P) => string;
@@ -109,6 +112,7 @@ export type InstanceCore = <T extends object>(data: T, middlewares?: Middleware<
 
 export type SignalArrayMethods<U, T> = {
   v: Signal<T>;
+  q: Signal<T>;
   push: (...items: U[]) => number;
   pop: () => Signal<U> | undefined;
   shift: () => Signal<U> | undefined;
@@ -120,13 +124,14 @@ export type SignalArrayMethods<U, T> = {
 
 export type SignalValue<T, R extends object = {}> = {
   v: T;
+  q: T;
   _metaPath: string;
 } & R;
 
 export type Signal<T, R extends object = {}> = T extends Primitive
   ? SignalValue<T, R>
   : T extends (infer U)[]
-  ? { [K in keyof T]: Signal<U, R> } & SignalArrayMethods<U, T> & Omit<SignalValue<T>, 'v'>
+  ? { [K in keyof T]: Signal<U, R> } & SignalArrayMethods<U, T> & Omit<SignalValue<T, R>, 'v'>
   : {
       [K in keyof T]: Signal<T[K], R>;
     } & SignalValue<T>;
