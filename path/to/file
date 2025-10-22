@@ -1,0 +1,26 @@
+import $ from 'jquery';
+
+const App = () => {
+  const timeId = useRef<number | undefined>(undefined);
+
+  console.log();
+
+  function handleCount() {
+    if (timeId.current !== undefined) {
+      clearInterval(timeId.current);
+    }
+
+    setCount((prevState) => prevState + 1);
+
+    timeId.current = setTimeout(() => {
+      console.log('Tick!');
+    }, 1000);
+  }
+
+  return (
+    <div>
+      <h1>{count}</h1>
+      <button onClick={handleCount}>Start</button>
+    </div>
+  );
+};

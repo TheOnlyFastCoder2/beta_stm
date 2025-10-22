@@ -1,4 +1,5 @@
 import { useSignalStore } from '../../lib/react';
+import type { ReactSignal } from '../../lib/react/types';
 
 export function TodoApp() {
   const { $: store } = useSignalStore({
@@ -41,12 +42,18 @@ export function TodoApp() {
   );
 }
 
-function TodoItem({ todo, setActive }: { todo: any; setActive: () => void }) {
+function TodoItem({ todo, setActive }: { todo: ReactSignal<{
+    title: string;
+    done: boolean;
+}>; setActive: () => void }) {
+  const ref = todo.useComputed<HTMLInputElement>(({current:el}) => { 
+    el.checked = todo.done.v;
+  })
   return (
     <div>
       <input
+        ref={ ref}
         type="checkbox"
-        checked={todo.done.v}
         onChange={() => {
           todo.done.v = !todo.done.v;
           setActive();

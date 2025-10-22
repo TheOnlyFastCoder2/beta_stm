@@ -110,19 +110,19 @@ export interface ObservableState<T extends object> {
 
 export type InstanceCore = <T extends object>(data: T, middlewares?: Middleware<T>[]) => ObservableState<T>;
 
-export type SignalArrayMethods<U, T> = {
+export type SignalArrayMethods<U, T, R extends object = {}> = {
   v: Signal<T>;
   q: Signal<T>;
   push: (...items: U[]) => number;
-  pop: () => Signal<U> | undefined;
-  shift: () => Signal<U> | undefined;
+  pop: () => Signal<U, R> | undefined;
+  shift: () => Signal<U, R> | undefined;
   unshift: (...items: U[]) => number;
-  splice: (start: number, deleteCount?: number, ...items: U[]) => Signal<U>[];
-  sort: (compareFn?: (a: Signal<U>, b: Signal<U>) => number) => Signal<U>[];
-  reverse: () => Signal<U>[];
+  splice: (start: number, deleteCount?: number, ...items: U[]) => Signal<U, R>[];
+  sort: (compareFn?: (a: Signal<U, R>, b: Signal<U, R>) => number) => Signal<U, R>[];
+  reverse: () => Signal<U, R>[];
 };
 
-export type SignalValue<T, R extends object = {}> = {
+export type SignalValue<T, R extends object = any> = {
   v: T;
   q: T;
   _metaPath: string;
@@ -131,10 +131,10 @@ export type SignalValue<T, R extends object = {}> = {
 export type Signal<T, R extends object = {}> = T extends Primitive
   ? SignalValue<T, R>
   : T extends (infer U)[]
-  ? { [K in keyof T]: Signal<U, R> } & SignalArrayMethods<U, T> & Omit<SignalValue<T, R>, 'v'>
+  ? { [K in keyof T]: Signal<U, R> } & SignalArrayMethods<U, T, R> & Omit<SignalValue<T, R>, 'v'>
   : {
       [K in keyof T]: Signal<T[K], R>;
-    } & SignalValue<T>;
+    } & SignalValue<T, R>;
 
 export interface StoreWithSignals<T extends object, R extends object = {}> extends ObservableState<T> {
   $: Signal<T, R>;

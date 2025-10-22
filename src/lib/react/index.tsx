@@ -96,7 +96,7 @@ export default function createReactStore<T extends object, TParams extends objec
 
   if (options.isSignals) {
     store.useSignal = (accessor) => {
-      const signal = store.getSignal(accessor);
+      const signal = store.getSignal(accessor) as any;
 
       if (!('c' in signal)) {
         const Signal = React.memo(() => {
@@ -180,6 +180,22 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
           });
         }
       }
+      if (!('useComputed' in signal)) {
+        Object.defineProperty(signal, 'useComputed', {
+          value: (fn: Function) => {
+            const ref = useRef<any>(null);
+            useEffect(() => {
+              const res = store.computed(() => {
+                fn(ref);
+              });
+              return () => {
+                res.destroy();
+              };
+            }, []);
+            return ref;
+          },
+        });
+      }
       if (Array.isArray(signal.v)) {
         const originMap = (signal as any).map;
 
@@ -197,12 +213,12 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
                   return prev;
                 }
 
-                const SignalComponent = React.memo((_: {value:any}) => {
-                  store.useField(item._metaPath as any);
+                const SignalComponent = React.memo((_: { value: any }) => {
+                  // store.useField(item._metaPath as any);
                   return renderFn(item, i) as any;
                 });
 
-                SignalComponent .displayName = item._metaPath;
+                SignalComponent.displayName = item._metaPath;
                 const element = <SignalComponent key={i} value={item.v} />;
                 componentCache.set(item._metaPath, element);
                 return element;
