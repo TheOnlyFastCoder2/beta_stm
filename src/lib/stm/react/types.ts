@@ -1,4 +1,4 @@
-import type { Accessor, CacheKey, ExtractPathReturn, Signal, StoreWithSignals } from '../stm/types';
+import type { Accessor, CacheKey, ExtractPathReturn, Signal, StoreWithSignals } from '../types';
 
 export type useStoreReturn<T extends object, P extends readonly Accessor<T>[]> = {
   [K in keyof P]: ExtractPathReturn<T, P[K]>;
@@ -6,6 +6,11 @@ export type useStoreReturn<T extends object, P extends readonly Accessor<T>[]> =
 
 export type ReactSignal<E> = Signal<E, R<any>>
 export type R<T extends object> = { c: React.JSX.Element, useComputed: ReactStore<T>['useComputed'] };
+export type RefMap<T> = Record<string, React.RefObject<any>> & {
+  current: React.RefObject<T>["current"];
+  get: <K extends string>(key: K) => React.RefObject<any>;
+};
+
 
 export interface ReactStore<T extends object> {
   useStore<const P extends readonly Accessor<T>[]>(
@@ -23,7 +28,7 @@ export interface ReactStore<T extends object> {
     options?: { cacheKeys?: CacheKey<T>[] }
   ): [ExtractPathReturn<T, P>, (value: ExtractPathReturn<T, P>) => void];
 
-  useComputed<R>(fn: (el: React.RefObject<R>) => void): React.RefObject<R>;
+  useComputed<MainEl extends HTMLElement, ExtraRefs extends Record<string, HTMLElement> = {}>(fn: (refs: RefMap<MainEl> & ExtraRefs) => void): RefMap<MainEl> & ExtraRefs
 }
 
 

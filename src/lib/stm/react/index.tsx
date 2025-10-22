@@ -1,10 +1,11 @@
-import { memo, useEffect, useLayoutEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
-import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../stm/types';
-import type { ReactSignal, ReactSignalsStore, ReactStore, useStoreReturn } from './types';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
+import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
+import type { ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
 import React from 'react';
-import stm from '../stm';
-import type { LocalState, QueryInstance, QueryOptions, QueryState } from '../stm/lib/query';
+import stm from '..';
+import type { LocalState, QueryInstance, QueryOptions, QueryState } from '../lib/query';
+import { cr_useComputed, defineSignalComponent, defineSignalMap } from './utils';
 
 export default function createReactStore<T extends object>(
   data: T,
@@ -70,18 +71,7 @@ export default function createReactStore<T extends object, TParams extends objec
     }, []);
   };
 
-  store.useComputed = (fn: Function) => {
-    const ref = useRef<any>(null);
-    useEffect(() => {
-      const res = store.computed(() => {
-        fn(ref);
-      });
-      return () => {
-        res.destroy();
-      };
-    }, []);
-    return ref;
-  };
+  store.useComputed = cr_useComputed(() => store);
 
   store.useField = (path, options) => {
     const [value] = store.useStore([path], options);
@@ -97,18 +87,7 @@ export default function createReactStore<T extends object, TParams extends objec
   if (options.isSignals) {
     store.useSignal = (accessor) => {
       const signal = store.getSignal(accessor) as any;
-
-      if (!('c' in signal)) {
-        const Signal = React.memo(() => {
-          store.useField(accessor);
-          return signal.v;
-        });
-        Signal.displayName = signal._metaPath;
-        Object.defineProperty(signal, 'c', {
-          value: <Signal />,
-        });
-      }
-
+      defineSignalComponent(() => store, signal);
       return signal as any;
     };
   }
@@ -169,64 +148,15 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
   if (!ref.current) {
     const store = createSignal(initialData, [], (signal) => {
       if (signal.v === null || typeof signal.v !== 'object') {
-        if (!('c' in signal)) {
-          const Signal = React.memo(() => {
-            store.useField(signal._metaPath as any);
-            return <>{signal.v}</>;
-          });
-          Signal.displayName = signal._metaPath;
-          Object.defineProperty(signal, 'c', {
-            value: <Signal />,
-          });
-        }
+        defineSignalComponent(() => store, signal);
       }
       if (!('useComputed' in signal)) {
         Object.defineProperty(signal, 'useComputed', {
-          value: (fn: Function) => {
-            const ref = useRef<any>(null);
-            useEffect(() => {
-              const res = store.computed(() => {
-                fn(ref);
-              });
-              return () => {
-                res.destroy();
-              };
-            }, []);
-            return ref;
-          },
+          value: cr_useComputed(() => store),
         });
       }
       if (Array.isArray(signal.v)) {
-        const originMap = (signal as any).map;
-
-        // console.log(originMap) // тут он есть
-        Object.defineProperty(signal, 'map', {
-          value: (renderFn: (item: Signal<any>, i: number) => React.ReactNode) => {
-            const componentCache = new Map<string, React.ReactElement>();
-
-            const Component = React.memo(() => {
-              store.useField(signal._metaPath as any);
-              return originMap.call(signal, (item: Signal<any>, i: number) => {
-                const prev = componentCache.get(item._metaPath);
-
-                if (prev && (prev.props as any).value === item.v) {
-                  return prev;
-                }
-
-                const SignalComponent = React.memo((_: { value: any }) => {
-                  // store.useField(item._metaPath as any);
-                  return renderFn(item, i) as any;
-                });
-
-                SignalComponent.displayName = item._metaPath;
-                const element = <SignalComponent key={i} value={item.v} />;
-                componentCache.set(item._metaPath, element);
-                return element;
-              });
-            });
-            return <Component />;
-          },
-        });
+        defineSignalMap(() => store, signal);
       }
     });
     ref.current = store;

@@ -1,7 +1,9 @@
-import { useSignalStore } from '../../lib/react';
-import type { ReactSignal } from '../../lib/react/types';
+import { useRef } from 'react';
+import { useSignalStore } from '../../lib/stm/react';
+import type { ReactSignal } from '../../lib/stm/react/types';
 
 export function TodoApp() {
+  const refInput = useRef<HTMLInputElement>(null);
   const { $: store } = useSignalStore({
     activeIndex: 0,
     todos: [
@@ -24,35 +26,48 @@ export function TodoApp() {
         <TodoItem
           key={i}
           todo={todo}
-          setActive={() => {
+          setActive={ () => {
+            const input = refInput.current;
+            if(input) input.value = todo.title.v
             store.activeIndex.v = i;
-            store.todos.v.forEach((item, _i) => { 
+            store.todos.v.forEach((item, _i) => {
               if (i === _i) return;
               item.done.q = false;
-            })
+            });
           }}
         />
       ))}
       <button onClick={addTodo}>Add Todo</button>
       <button onClick={removeTodo}>remove Todo</button>
-      <input type="text" onChange={ ({ currentTarget }) => {
-        store.todos[store.activeIndex.v].title.v  = currentTarget.value
-      }}/>
+      <input
+        ref={refInput}
+        type="text"
+        onChange={({ currentTarget }) => {
+          store.todos[store.activeIndex.v].title.v = currentTarget.value;
+        }}
+      />
     </div>
   );
 }
 
-function TodoItem({ todo, setActive }: { todo: ReactSignal<{
+function TodoItem({
+  todo,
+  setActive,
+}: {
+  todo: ReactSignal<{
     title: string;
     done: boolean;
-}>; setActive: () => void }) {
-  const ref = todo.useComputed<HTMLInputElement>(({current:el}) => { 
+  }>;
+  setActive: () => void;
+}) {
+  const ref = todo.useComputed<HTMLInputElement, {myDiv:HTMLDialogElement}>(({ current: el, myDiv }) => {
     el.checked = todo.done.v;
-  })
+    myDiv.style.background = todo.done.v ? 'red' : 'green'
+  });
   return (
-    <div>
+    <div ref={ref.get('myDiv')}>
       <input
-        ref={ ref}
+        ref={ref}
         type="checkbox"
         onChange={() => {
           todo.done.v = !todo.done.v;

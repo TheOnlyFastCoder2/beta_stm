@@ -1,5 +1,5 @@
 import $ from './App.module.css';
-import { useSignalStore } from './lib/react';
+import { useSignalStore } from './lib/stm/react';
 import Button from './shared/Button';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';

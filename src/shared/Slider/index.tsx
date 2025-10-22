@@ -1,4 +1,4 @@
-import { useSignalStore } from '../../lib/react';
+import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
 
 function getPointerEvent(e: MouseEvent | TouchEvent) {

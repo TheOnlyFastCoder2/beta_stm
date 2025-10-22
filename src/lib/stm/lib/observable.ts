@@ -23,10 +23,10 @@ export default function createObservableState<T extends object>(
 
   const store: ObservableState<T> = {} as any;
   const primitiveMetaMap = new Map<string, MetaData>();
+  let metaMap = new WeakMap<object, MetaData>();
 
   let batchDepth = 0;
   let batchedPaths = new Set<string>();
-  let metaMap = new WeakMap<object, MetaData>();
 
   initializeValue(data, metaMap, primitiveMetaMap);
 
@@ -135,15 +135,16 @@ export default function createObservableState<T extends object>(
     const path = getPath<T>(data, accessor);
     const oldVal = getValue<T>(path, data);
     const newVal = resolveValue(cbOrVal, oldVal);
-
+    const _update = (isQuite?:boolean) => {
+      return coreUpdate(newVal, oldVal, path, {
+        quietUpdate: isQuite,
+      });
+    };
     if (batchDepth > 0) {
       batchedPaths.add(path);
-      setValue(path, data, newVal);
-      return;
+      return _update(true);
     }
-    return coreUpdate(newVal, oldVal, path, {
-      quietUpdate: options?.quiet,
-    });
+    return _update(options?.quiet);
   }) as ObservableState<T>['update'];
 
   store.update.quiet = (accessor, cbOrVal) => {
@@ -151,6 +152,8 @@ export default function createObservableState<T extends object>(
   };
 
   store.setStore = (newData: T) => {
+    store.destroy();
+    (store as any)._destroyed = undefined;
     initializeValue(newData, metaMap, primitiveMetaMap);
     data = newData;
   };
@@ -208,7 +211,6 @@ export default function createObservableState<T extends object>(
     };
 
     subscribers.add(metaData);
-
     return metaData.unsubscribe;
   };
 

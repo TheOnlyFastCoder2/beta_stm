@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import $ from './styles.module.css';
-import { createSignal } from '../../lib/react';
+import { createSignal } from '../../lib/stm/react';
 
 const store = createSignal({
   x: 0,

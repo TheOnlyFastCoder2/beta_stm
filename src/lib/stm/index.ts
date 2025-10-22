@@ -38,3 +38,16 @@ export default function stm<T extends object>(
 
   return createObservableState(data, middlewares);
 }
+
+const store = stm({
+  count: 32,
+  lol:434,
+})
+
+store.subscribe(() => { 
+  console.log(323)
+})
+store.batch(() => { 
+  store.update(($) => $.count, 323)
+  store.update(($) => $.count, 323)
+})

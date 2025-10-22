@@ -1,6 +1,6 @@
 import { Activity } from 'react';
 import { instance } from '../../lib/api/config';
-import { createQueryReact } from '../../lib/react';
+import { createQueryReact } from '../../lib/stm/react';
 import $ from './styles.module.css';
 
 const getPokemon = createQueryReact<PokemonWithSprites, { name: string }, { user: string; password: string }>({
