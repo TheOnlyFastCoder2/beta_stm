@@ -11,23 +11,24 @@ export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T)
     const extraRefs = useRef<Record<string, React.RefObject<any>>>({});
 
     const get = (key: string) => {
-      if (!extraRefs.current[key]) {
-        extraRefs.current[key] = { current: null };
-      }
-      return extraRefs.current[key];
+      return (extraRefs.current[key] ??= { current: null });
     };
+
+    function mergeRefs() {
+      const mergedRefs = {} as any;
+      mergedRefs.get = get;
+      mergedRefs.current = mainRef.current;
+      for (const key in extraRefs.current) {
+        mergedRefs[key] = extraRefs.current[key].current;
+      }
+
+      return mergedRefs;
+    }
 
     useEffect(() => {
       const store = cbStore();
       const reaction = store.computed(() => {
-        const mergedRefs = {
-          current: mainRef.current,
-          get,
-          ...Object.fromEntries(
-            Object.entries(extraRefs.current).map(([k, v]) => [k, v.current])
-          ),
-        } as RefMap<MainEl> & ExtraRefs;
-
+        const mergedRefs = mergeRefs();
         fn(mergedRefs);
       });
       return () => {
@@ -35,7 +36,8 @@ export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T)
       };
     }, []);
 
-    return Object.assign(mainRef, { get }) as RefMap<MainEl> & ExtraRefs;
+    (mainRef as any).get = get;
+    return mainRef as RefMap<MainEl> & ExtraRefs;
   }
 
   return useComputed;
