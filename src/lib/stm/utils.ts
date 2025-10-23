@@ -10,7 +10,6 @@ function getNormalizedBodyWithArgs(str: string): [string[], string] {
   let startBody = 0;
   let phase = 0; // 0 - аргументы, 1 - тело функции
 
-
   // Находим start и end за один проход
   for (let i = 0; i < str.length; i++) {
     if (str[i] === '(' && start === -1) start = i;
@@ -44,7 +43,7 @@ function getNormalizedBodyWithArgs(str: string): [string[], string] {
       if (startBody <= `${args[0]}.`.length) {
         startBody++;
         continue;
-      } 
+      }
 
       if (char !== '[' && char !== ']') {
         newBody += char;
@@ -143,7 +142,7 @@ function shouldNotifyByCacheKeys(metaData: Omit<SubsMetaData, 'path'>, normalize
 
 function shouldNotifyForCacheKeys(metaData: { cacheKeys?: any[] }, normalizedKey: string, data: any): boolean {
   const { cacheKeys } = metaData;
-  if (!Array.isArray(cacheKeys)|| cacheKeys.length === 0) return false;
+  if (!Array.isArray(cacheKeys) || cacheKeys.length === 0) return false;
 
   return !!cacheKeys?.some((key) => {
     const path = getPath(data, key);
@@ -194,7 +193,7 @@ export function notifyBatchInvalidate<T>(
     notifyPathSubscribers(path, pathSubscribers, data);
     notifiedPaths.add(path);
   });
- 
+
   if (normalizedKeys.length > 0) {
     subscribers.forEach((metaData) => {
       metaData.callback();
@@ -309,7 +308,6 @@ export function wrapArrayMethods(node: any, metaMap: WeakMap<object, MetaData>) 
   return node as WrapArray;
 }
 
-
 export function wrapSignalArray(
   node: any,
   basePath: string,
@@ -320,16 +318,12 @@ export function wrapSignalArray(
 
   MUTATING_METHODS.array.forEach((method) => {
     (WrapArray.prototype as any)[method] = function (...args: any[]) {
-      const arr = this as any[];
       const newArgs = args.map((arg, i) => {
-        if (['push', 'unshift'].includes(method) || (method === 'splice' && i >= 2)) {
-          return createSignal(arg, `${basePath}.${arr.length}`);
-        }
-        return arg;
+        const isToWrapping = 'push' === method || 'unshift' === method || (method === 'splice' && i >= 2);
+        return isToWrapping ? createSignal(arg, `${basePath}.${this.length}`) : arg;
       });
 
-      const result = (Array.prototype as any)[method].apply(arr, newArgs);
-
+      const result = (Array.prototype as any)[method].apply(this, newArgs);
       store.update(basePath, (oldVal: any[]) => {
         (Array.prototype as any)[method].apply(oldVal, args);
         return oldVal;
