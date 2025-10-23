@@ -11,13 +11,13 @@ export default function createStoreWithSignals<T extends object>(
   const pathCache = new Map<string, { parentPath: string; key: string }>();
   const signalsMap = new Map<string, any>();
 
-  function defineVProp(target: any, path: string, valueGetter?: () => any) {
+  function defineVProp(target: any, path: string) {
     const createSignal = (updateMethod: 'update' | 'update.quiet') => {
       const isQuiet = updateMethod === 'update.quiet';
-      const property = isQuiet ? 'v' : 'q';
+      const property = !isQuiet ? 'v' : 'q';
 
       const signal = Object.defineProperty(target, property, {
-        get: () => valueGetter ? valueGetter() : store.get(path as any),
+        get: () => store.get(path as any),
         set: (newVal) => { 
           store.update(path as any, newVal, {quiet: isQuiet})
         },
@@ -42,7 +42,6 @@ export default function createStoreWithSignals<T extends object>(
       if (currentValue === null || typeof currentValue !== 'object') {
         const signal = {};
         defineVProp(signal, currentPath);
-        signalsMap.set(currentPath, signal);
         stack.pop();
         continue;
       }
@@ -70,8 +69,7 @@ export default function createStoreWithSignals<T extends object>(
 
         // Все дети обработаны — создаем сигнал для массива
         wrapSignalArray(arrSignals, currentPath, store, createSignal);
-        defineVProp(arrSignals, currentPath, () => arrSignals);
-        signalsMap.set(currentPath, arrSignals);
+        defineVProp(arrSignals, currentPath);
         stack.pop();
         continue;
       }
@@ -96,7 +94,6 @@ export default function createStoreWithSignals<T extends object>(
         signal[key] = signalsMap.get(childPath);
       }
       defineVProp(signal, currentPath);
-      signalsMap.set(currentPath, signal);
       stack.pop();
     }
 
@@ -145,10 +142,11 @@ export default function createStoreWithSignals<T extends object>(
   const originUpdate = store.update;
   const originUpdateQuiet = store.update.quiet;
   const originDestroy = store.destroy;
+  const originSetStore = store.setStore;
 
   store.update = ((accessor, cbOrVal) => {
-    const idUpdated = originUpdate(accessor, cbOrVal);
-    if (!idUpdated) return false;
+    const isUpdated = originUpdate(accessor, cbOrVal);
+    if (!isUpdated) return false;
     updateSignals(accessor);
     return true;
   }) as ObservableState<T>['update'];
@@ -161,7 +159,7 @@ export default function createStoreWithSignals<T extends object>(
   };
 
   store.setStore = (newData: T) => {
-    store.setStore?.(newData);
+    originSetStore?.(newData);
     signalsMap.clear();
     pathCache.clear();
     store.$ = createSignal(newData, '');
