@@ -11,7 +11,8 @@ function App() {
   // const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
 
   return (
-    <div className={$.App}>
+    <div className={ $.App }>
+         <Slider />
       {/* <Button onClick={() => store.count.v++} className={$.MyButton}>
         {store.count.c}
       </Button>

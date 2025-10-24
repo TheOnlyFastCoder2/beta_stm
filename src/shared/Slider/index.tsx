@@ -1,66 +1,41 @@
+import { useRef } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
+import { Draggable, type DraggableImpRef } from '../../lib/stm/react/components';
 import $ from './styles.module.css';
-
-function getPointerEvent(e: MouseEvent | TouchEvent) {
-  if ('touches' in e) {
-    return e.touches[0]; // берем первый палец
-  }
-  return e; // MouseEvent уже имеет clientX/clientY
-}
 
 export default function Slider() {
   const { $: store, useComputed } = useSignalStore({
     percent: 0,
-    prevPercent: 0,
   });
 
-  const ref = useComputed<HTMLDivElement>(({ current: el }) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const grabberRef = useRef<Partial<DraggableImpRef>>({});
+
+
+  const indicatorRef = useComputed<HTMLDivElement>(({ current: el }) => {
+    if (!trackRef.current) return;
+    const trackWidth = trackRef.current.offsetWidth;
+    const x = (store.percent.v / 100) * trackWidth;
+    grabberRef.current.startX = x;
     el.style.width = `${store.percent.v}%`;
   });
 
-  const startDrag = (startEvent: MouseEvent | TouchEvent, track: HTMLDivElement) => {
-    const startPointer = getPointerEvent(startEvent);
-    const startX = startPointer.clientX;
-    const startPercent = store.percent.v;
 
-    const onMove = (moveEvent: MouseEvent | TouchEvent) => {
-      moveEvent.preventDefault();
-      const pointer = getPointerEvent(moveEvent);
-      const deltaX = pointer.clientX - startX;
-      const trackWidth = track.offsetWidth;
-      const deltaPercent = (deltaX / trackWidth) * 100;
-      store.percent.v = Math.min(100, Math.max(0, startPercent + deltaPercent));
-    };
-
-    const onEnd = () => {
-      store.prevPercent.v = store.percent.v;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onEnd);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onEnd);
-      document.body.style.cursor = 'default';
-    };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onEnd);
-    document.body.style.cursor = 'grabbing';
-  };
-
-  const onGrabberDown = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    const track: HTMLDivElement = e.currentTarget.closest(`.${$.track}`)!;
-    startDrag(e.nativeEvent, track);
+  grabberRef.current.move = (x: number) => {
+    if (!trackRef.current) return;
+    const trackWidth = trackRef.current.offsetWidth;
+    const clampedX = Math.max(0, Math.min(trackWidth, x));
+    store.percent.v = +((clampedX / trackWidth) * 100).toFixed(0);
   };
 
   return (
-    <div>
-      <h1>{ store.percent.c }</h1>
-      <div className={$.Slider}>
-        <div className={$.track}>
-          <div className={$.indicator} ref={ref}>
-            <div className={$.grabber} onMouseDown={onGrabberDown} onTouchStart={onGrabberDown} />
-          </div>
+    <div className={$.Slider}>
+      <h1>{store.percent.c}%</h1>
+      <div className={$.track} ref={trackRef}>
+        <div className={$.indicator} ref={indicatorRef}>
+          <Draggable impRef={grabberRef}>
+            <div className={$.grabber} />
+          </Draggable>
         </div>
       </div>
     </div>
