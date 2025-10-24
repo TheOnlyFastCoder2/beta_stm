@@ -2,6 +2,7 @@ import { useImperativeHandle, useRef, type PropsWithChildren } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
 import { Active } from '../../lib/stm/react/components';
+import DraggableTest from '../Draggable';
 
 interface ImpRef {
   toOpen: () => void;
@@ -28,7 +29,7 @@ export default function Popup({ impRef, children }: Props) {
 
   return (
     <div className={$.Popup} ref={ref}>
-      <div className={$.Popup}>{children}</div>
+      <div className={$.content}>{children}</div>
     </div>
   );
 }
@@ -49,14 +50,15 @@ export function ViewerModalWins() {
         <button onClick={() => (st.type.v = 'Modal2')}>Modal2</button>
       </div>
 
-    
       <Popup impRef={ref}>
-        <Active sg={st.type} is={'Modal1'}>
-          <Modal1 />
-        </Active>
-        <Active sg={st.type} is={'Modal2'}>
-          <Modal2 />
-        </Active>
+        <DraggableTest>
+          <Active sg={st.type} is={'Modal1'}>
+            <Modal1 />
+          </Active>
+          <Active sg={st.type} is={'Modal2'}>
+            <Modal2 />
+          </Active>
+        </DraggableTest>
       </Popup>
     </div>
   );
@@ -79,4 +81,3 @@ function Modal2() {
     </div>
   );
 }
-

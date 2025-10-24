@@ -1,6 +1,7 @@
 import $ from './App.module.css';
 import { useSignalStore } from './lib/stm/react';
 import Button from './shared/Button';
+import Draggable from './shared/Draggable';
 import Popup, { ViewerModalWins } from './shared/Popup';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';
@@ -17,8 +18,9 @@ function App() {
       <Slider />
       <Slider />
       <QueryExample /> */}
-      <TodoApp/> 
-      {/* <ViewerModalWins/> */}
+      {/* <TodoApp/>  */}
+     <ViewerModalWins/>
+      {/* <Draggable/> */}
     </div>
   );
 }
