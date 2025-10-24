@@ -21,7 +21,6 @@ export default function createStoreWithSignals<T extends object>(
       const isQuiet = updateMethod === 'update.quiet';
       const property = !isQuiet ? 'v' : 'q';
 
-      target._metaPath = path;
       const signal = Object.defineProperty(target, property, {
         get: () => store.get(target._metaPath as any),
         set: (newVal) => {
@@ -30,7 +29,7 @@ export default function createStoreWithSignals<T extends object>(
       });
       return signal;
     };
-
+    target._metaPath = path;
     createSignal('update');
     createSignal('update.quiet');
     defineProperty?.(target);
