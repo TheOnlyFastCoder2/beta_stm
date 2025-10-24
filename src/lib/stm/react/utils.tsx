@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import type { ObservableState, Signal } from '../types';
 import React from 'react';
-import type { ReactStore, RefMap } from './types';
+import type { ReactSignalsStore, ReactStore, RefMap } from './types';
 
 export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T) {
   function useComputed<MainEl extends HTMLElement, ExtraRefs extends Record<string, HTMLElement> = {}>(
@@ -46,7 +46,6 @@ export function defineSignalComponent<T extends ReactStore<any>>(cbStore: () => 
   if ('c' in signal) return;
   const Signal = React.memo(() => {
     cbStore().useField(signal._metaPath as any);
-    console.log(signal.v);
     return signal.v;
   });
   Signal.displayName = signal._metaPath;
@@ -55,27 +54,44 @@ export function defineSignalComponent<T extends ReactStore<any>>(cbStore: () => 
   });
 }
 
-export function defineSignalMap<T extends ReactStore<any>>(cbStore: () => T, signal: Signal<any>) {
+
+export function defineSignalMap<T extends ReactSignalsStore<any>>(
+  cbStore: () => T,
+  signal: Signal<any>
+) {
   const originMap = (signal as any).map;
-  const newMap = (renderFn: (item: Signal<T>, index: number) => React.ReactNode) => {
-    const cache = new Map();
+
+  const newMap = (renderFn: (item: Signal<any>, index: number) => React.ReactNode) => {
+    const cache = new WeakMap<Signal<any>, React.ReactElement<{ value: any }>>();
+
     const Component = React.memo(() => {
-      cbStore().useField(signal._metaPath as any);
-      return originMap.call(signal, (item: Signal<T>, i: number) => {
-        const prev = cache.get(item._metaPath);
+      const store = cbStore();
+      store.useField(signal._metaPath as any);
+      const _signal = store.getSignal(signal._metaPath as any);
 
-        if (prev?.props?.value === item.v) return prev;
+      return originMap.call(_signal, (item: Signal<any>, i: number) => {
+        const prev = cache.get(item);
+        
+        if (prev && prev.props.value === item.v) return prev;
+        const SignalComponent = React.memo((_: { value: any }) => renderFn(item, i), 
+          (prevProps, nextProps) => prevProps.value === nextProps.value
+        );
 
-        const SignalComponent = React.memo((_: { value: any }) => renderFn(item, i));
         SignalComponent.displayName = item._metaPath;
-        const element = <SignalComponent key={i} value={item.v} />;
-        cache.set(item._metaPath, element);
+
+        const element = <SignalComponent key={item._metaPath} value={item.v} />;
+        cache.set(item, element);
+
         return element;
       });
     });
+
     return <Component />;
   };
+
   Object.defineProperty(signal, 'map', {
     value: newMap,
+    writable: true,
+    configurable: true,
   });
 }

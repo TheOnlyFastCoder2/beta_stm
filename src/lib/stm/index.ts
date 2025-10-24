@@ -19,7 +19,7 @@ export default function stm<T extends object>(
 export default function stm<TData extends object, TParams extends object = any, PostData extends object = any>(
   data: QueryOptions<TData, TParams, PostData>,
   middlewares?: Middleware<QueryOptions<TData, TParams, PostData>>[],
-  options?: { isQuery: true },
+  options?: { isQuery: true }
 ): QueryInstance<TData, TParams, PostData>;
 
 export default function stm<T extends object>(

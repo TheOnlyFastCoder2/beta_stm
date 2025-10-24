@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import type { ReactSignal } from '../../lib/stm/react/types';
 
+import $ from './styles.module.css';
+
 export function TodoApp() {
   const refInput = useRef<HTMLInputElement>(null);
   const { $: store } = useSignalStore({
@@ -9,13 +11,14 @@ export function TodoApp() {
     todos: [
       { title: 'Learn STM', done: false },
       { title: 'Learn React', done: false },
+      { title: 'Learn React', done: false },
     ],
   });
 
   const addTodo = () => {
     store.todos.push({ title: 'New task', done: false });
-    // console.log(store.todos)
   };
+  
   const removeTodo = () => {
     store.todos.pop();
   };
@@ -26,13 +29,16 @@ export function TodoApp() {
         <TodoItem
           key={i}
           todo={todo}
-          setActive={ () => {
+          remove={ () => {
+            store.todos.splice(i, 1);
+          }}
+          setActive={() => {
             const input = refInput.current;
-            if(input) input.value = todo.title.v
+            if (input) input.value = todo.title.v;
             store.activeIndex.v = i;
-            store.todos.v.forEach((item, _i) => {
+            store.todos.forEach((item, _i) => {
               if (i === _i) return;
-              item.done.q = false;
+              item.done.v = false;
             });
           }}
         />
@@ -53,19 +59,21 @@ export function TodoApp() {
 function TodoItem({
   todo,
   setActive,
+  remove,
 }: {
   todo: ReactSignal<{
     title: string;
     done: boolean;
   }>;
   setActive: () => void;
+  remove: () => void;
 }) {
-  const ref = todo.useComputed<HTMLInputElement, {myDiv:HTMLDialogElement}>(({ current: el, myDiv }) => {
+  const ref = todo.useComputed<HTMLInputElement, { myDiv: HTMLDialogElement }>(({ current: el, myDiv }) => {
     el.checked = todo.done.v;
-    myDiv.style.background = todo.done.v ? 'red' : 'green'
+    myDiv.style.background = todo.done.v ? 'red' : 'green';
   });
   return (
-    <div ref={ref.get('myDiv')}>
+    <div ref={ref.get('myDiv')} className={$.TodoItem}>
       <input
         ref={ref}
         type="checkbox"
@@ -75,6 +83,7 @@ function TodoItem({
         }}
       />
       {todo.title.c}
+      <button onClick={remove}>remove</button>
     </div>
   );
 }

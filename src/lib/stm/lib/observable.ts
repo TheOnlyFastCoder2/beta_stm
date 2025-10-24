@@ -96,6 +96,7 @@ export default function createObservableState<T extends object>(
     const path = getPath<T>(data, accessor);
     return getValue<T>(path, data);
   };
+
   store.resolvePath = (accessor) => {
     return getPath<T>(data, accessor);
   };
@@ -135,7 +136,7 @@ export default function createObservableState<T extends object>(
     const path = getPath<T>(data, accessor);
     const oldVal = getValue<T>(path, data);
     const newVal = resolveValue(cbOrVal, oldVal);
-    const _update = (isQuite?:boolean) => {
+    const _update = (isQuite?: boolean) => {
       return coreUpdate(newVal, oldVal, path, {
         quietUpdate: isQuite,
       });

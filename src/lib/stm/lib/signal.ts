@@ -11,28 +11,33 @@ export default function createStoreWithSignals<T extends object>(
   const pathCache = new Map<string, { parentPath: string; key: string }>();
   const signalsMap = new Map<string, any>();
 
-  function defineVProp(target: any, path: string) {
+  function defineVProp(target: any, path: string, setIsOnlyPath = false) {
+    if (setIsOnlyPath) {
+      target._metaPath = path;
+      return;
+    }
+
     const createSignal = (updateMethod: 'update' | 'update.quiet') => {
       const isQuiet = updateMethod === 'update.quiet';
       const property = !isQuiet ? 'v' : 'q';
 
+      target._metaPath = path;
       const signal = Object.defineProperty(target, property, {
-        get: () => store.get(path as any),
-        set: (newVal) => { 
-          store.update(path as any, newVal, {quiet: isQuiet})
+        get: () => store.get(target._metaPath as any),
+        set: (newVal) => {
+          store.update(target._metaPath as any, newVal, { quiet: isQuiet });
         },
       });
       return signal;
     };
 
-    const signal = createSignal('update');
+    createSignal('update');
     createSignal('update.quiet');
     defineProperty?.(target);
-    signal._metaPath = path;
-    signalsMap.set(path, signal);
+    signalsMap.set(path, target);
   }
 
-  function createSignal(value: any, basePath = '') {
+  function createSignal(value: any, basePath = '', setIsOnlyPath = false) {
     const stack = [{ value, path: basePath }];
 
     while (stack.length > 0) {
@@ -41,7 +46,7 @@ export default function createStoreWithSignals<T extends object>(
       // Если это примитив - создаем сигнал и убираем из стека
       if (currentValue === null || typeof currentValue !== 'object') {
         const signal = {};
-        defineVProp(signal, currentPath);
+        defineVProp(signal, currentPath, setIsOnlyPath);
         stack.pop();
         continue;
       }
@@ -55,7 +60,6 @@ export default function createStoreWithSignals<T extends object>(
           const childSignal = signalsMap.get(childPath);
 
           if (!childSignal && !hasUnprocessedChild) {
-          
             // Находим первого необработанного ребенка — пушим в стек
             stack.push({ value: currentValue[i], path: childPath });
             hasUnprocessedChild = true;
@@ -69,11 +73,11 @@ export default function createStoreWithSignals<T extends object>(
 
         // Все дети обработаны — создаем сигнал для массива
         wrapSignalArray(arrSignals, currentPath, store, createSignal);
-        defineVProp(arrSignals, currentPath);
+        defineVProp(arrSignals, currentPath, setIsOnlyPath);
         stack.pop();
         continue;
       }
-  
+
       // Объект
       let hasUnprocessedChild = false;
       for (const key in currentValue) {
@@ -93,7 +97,7 @@ export default function createStoreWithSignals<T extends object>(
         const childPath = currentPath ? `${currentPath}.${key}` : key;
         signal[key] = signalsMap.get(childPath);
       }
-      defineVProp(signal, currentPath);
+      defineVProp(signal, currentPath, setIsOnlyPath);
       stack.pop();
     }
 

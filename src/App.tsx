@@ -1,12 +1,13 @@
 import $ from './App.module.css';
 import { useSignalStore } from './lib/stm/react';
 import Button from './shared/Button';
+import Popup, { ViewerModalWins } from './shared/Popup';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';
 import { TodoApp } from './shared/Todo';
 
 function App() {
-  const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
+  // const { $: store } = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
 
   return (
     <div className={$.App}>
@@ -16,7 +17,8 @@ function App() {
       <Slider />
       <Slider />
       <QueryExample /> */}
-      <TodoApp/>
+      <TodoApp/> 
+      {/* <ViewerModalWins/> */}
     </div>
   );
 }

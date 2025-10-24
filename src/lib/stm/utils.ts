@@ -307,33 +307,63 @@ export function wrapArrayMethods(node: any, metaMap: WeakMap<object, MetaData>) 
 
   return node as WrapArray;
 }
-
 export function wrapSignalArray(
   node: any,
   basePath: string,
   store: any,
-  createSignal: (value: any, basePath?: string) => any
+  createSignal: (value: any, basePath?: string, setIsOnlyPath?:boolean) => any
 ) {
   if (!Array.isArray(node) || (node as any)._isWrapped) return node;
 
   MUTATING_METHODS.array.forEach((method) => {
     (WrapArray.prototype as any)[method] = function (...args: any[]) {
+      const arr = this as any[];
+      let startIndex = 0;
+
+      //prettier-ignore
+      switch (method) {
+        case 'push': break;
+        case 'pop': break;
+        case 'unshift': startIndex = 0; break;
+        case 'shift': startIndex = 0;  break;
+        case 'splice': startIndex = args[0] ?? 0;break;
+        case 'sort':
+        case 'reverse':
+          startIndex = 0;
+          break;
+      }
+
       const newArgs = args.map((arg, i) => {
-        const isToWrapping = 'push' === method || 'unshift' === method || (method === 'splice' && i >= 2);
-        return isToWrapping ? createSignal(arg, `${basePath}.${this.length}`) : arg;
+        const isToWrap = method === 'push' || method === 'unshift' || (method === 'splice' && i >= 2);
+        return isToWrap ? createSignal(arg, `${basePath}.${arr.length + i}`) : arg;
       });
 
-      const result = (Array.prototype as any)[method].apply(this, newArgs);
+      const result = (Array.prototype as any)[method].apply(arr, newArgs);
+
       store.update(basePath, (oldVal: any[]) => {
         (Array.prototype as any)[method].apply(oldVal, args);
         return oldVal;
       });
+
+      switch (method) {
+        case 'unshift':
+        case 'shift':
+        case 'splice':
+        case 'sort':
+        case 'reverse':
+          for (let i = startIndex; i < arr.length; i++) {
+            const newSignal = createSignal(store.get(`${basePath}.${i}`), `${basePath}.${i}`, true);
+            arr[i] = newSignal;
+          }
+          break;
+      }
 
       return result;
     };
   });
 
   Object.setPrototypeOf(node, WrapArray.prototype);
+  (node as any)._isWrapped = true;
   return node as WrapArray;
 }
 

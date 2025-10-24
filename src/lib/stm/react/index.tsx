@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type PropsWit
 import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
 import type { ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
-import React from 'react';
 import stm from '..';
 import type { LocalState, QueryInstance, QueryOptions, QueryState } from '../lib/query';
 import { cr_useComputed, defineSignalComponent, defineSignalMap } from './utils';
@@ -159,12 +158,15 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
         defineSignalMap(() => store, signal);
       }
     });
+
     ref.current = store;
   }
 
   useLayoutEffect(() => {
-    ref.current?.destroy?.();
-    ref.current = null;
+    return () => {
+      ref.current?.destroy?.();
+      ref.current = null;
+    };
   }, []);
 
   return ref.current;
