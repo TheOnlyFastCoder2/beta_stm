@@ -16,7 +16,7 @@ function App() {
         {store.$.count.c}
       </Button>
       {/* <QueryExample /> */}
-      {/* <TodoApp /> */}
+      <TodoApp />
       {/* <ViewerModalWins /> */}
       {/* <Draggable/> */}
     </div>
