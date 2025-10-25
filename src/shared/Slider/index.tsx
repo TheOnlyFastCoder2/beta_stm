@@ -21,10 +21,10 @@ export default function Slider() {
   });
 
 
-  grabberRef.current.move = (x: number) => {
+  grabberRef.current.move = (x) => {
     if (!trackRef.current) return;
     const trackWidth = trackRef.current.offsetWidth;
-    const clampedX = Math.max(0, Math.min(trackWidth, x));
+    const clampedX = Math.max(0, Math.min(trackWidth, x.v));
     store.percent.v = +((clampedX / trackWidth) * 100).toFixed(0);
   };
 

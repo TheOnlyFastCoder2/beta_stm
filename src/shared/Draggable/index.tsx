@@ -9,8 +9,8 @@ export default function DraggableTest({ children }:PropsWithChildren) {
   ref.current.move = (x, y) => {
     if (!refEl.current) return;
     const header = refEl.current;
-    header.style.left = `${x}px`;
-    header.style.top = `${y}px`;
+    header.style.left = `${x.v}px`;
+    header.style.top = `${y.v}px`;
   };
 
   return (

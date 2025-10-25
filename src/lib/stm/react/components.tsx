@@ -18,7 +18,7 @@ export function Active<T>({ sg, is, children }: ActiveProps<T>) {
 }
 
 export interface DraggableImpRef {
-  move?: (x: number, y: number) => void;
+  move?: (x: ReactSignal<number>, y: ReactSignal<number>) => void;
   startX?: number
   startY?: number
 }
@@ -34,7 +34,7 @@ export function Draggable({ impRef, children }: DraggableProps) {
   });
 
   const ref = useComputed<HTMLDivElement>(() => {
-    impRef?.current.move?.(store.x.v, store.y.v);
+    impRef?.current.move?.(store.x, store.y);
   });
 
   const onGrabberDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>) => {

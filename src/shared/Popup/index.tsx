@@ -1,4 +1,4 @@
-import { useImperativeHandle, useRef, type PropsWithChildren } from 'react';
+import {useImperativeHandle, useRef, type PropsWithChildren } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
 import { Active } from '../../lib/stm/react/components';
@@ -11,26 +11,41 @@ interface ImpRef {
 
 interface Props extends PropsWithChildren {
   impRef: React.RefObject<Partial<ImpRef>>;
+  mode?: 'overlay' | 'normal';
+  delay?: number;
 }
 
-export default function Popup({ impRef, children }: Props) {
+export default function Popup({ impRef, delay = 100, children, mode = 'normal' }: Props) {
+  const refPopup = useRef<HTMLDivElement>(null);
   const { $: st } = useSignalStore({
     isOpen: false,
-  });
-
-  const ref = st.useComputed<HTMLDivElement>(({ current: el }) => {
-    el.style.display = !st.isOpen.v ? 'none' : 'block';
+    timeId: -1,
   });
 
   useImperativeHandle(impRef, () => ({
     toOpen: () => (st.isOpen.v = true),
-    toClose: () => (st.isOpen.v = false),
+    toClose: () => {
+      if (!!~st.timeId.v) return;
+      refPopup.current?.classList.add?.($.remove);
+      st.timeId.v = setTimeout(() => {
+        refPopup.current?.classList.remove?.($.remove);
+        st.timeId.v = -1;
+        st.isOpen.v = false;
+      }, delay);
+    },
   }));
 
+  const handleClickOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.classList.add($.remove);
+    impRef.current.toClose?.();
+  };
+
   return (
-    <div className={$.Popup} ref={ref}>
-      <div className={$.content}>{children}</div>
-    </div>
+    <Active sg={st.isOpen} is={true}>
+      <div onClick={handleClickOverlay} className={`${$.Popup} ${$[mode]}`} ref={refPopup}>
+        <div onClick={(e) => e.stopPropagation()} className={$.content} children={children} />
+      </div>
+    </Active>
   );
 }
 
@@ -50,7 +65,7 @@ export function ViewerModalWins() {
         <button onClick={() => (st.type.v = 'Modal2')}>Modal2</button>
       </div>
 
-      <Popup impRef={ref}>
+      <Popup impRef={ref} mode="overlay" delay={500}>
         <DraggableTest>
           <Active sg={st.type} is={'Modal1'}>
             <Modal1 />
