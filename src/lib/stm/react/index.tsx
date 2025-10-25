@@ -145,7 +145,7 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
   const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
   if (!ref.current) {
     ref.current = initStore();
-    // (ref.current as any)._initHook = true;
+    (ref.current as any)._initHook = true;
   }
 
   function initStore() {
@@ -164,16 +164,5 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
     });
     return store;
   }
-
-  useLayoutEffect(() => {
-    // if ((ref.current as any)._initHook && (ref.current as any)._destroyed) {
-    //   ref.current = initStore();
-    // }
-    return () => {
-      ref.current?.destroy();
-      ref.current = null;
-    };
-  }, []);
-
   return ref.current;
 }
