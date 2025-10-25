@@ -12,11 +12,13 @@ function App() {
   return (
     <div className={ $.App }>
       <Slider />
-      <Button onClick={ () => { 
-        store.$.count.v++
-      } } className={$.MyButton}>
+      <Button onClick={() => store.$.count.v++} className={$.MyButton}>
         {store.$.count.c}
       </Button>
+      {/* <QueryExample /> */}
+      {/* <TodoApp /> */}
+      {/* <ViewerModalWins /> */}
+      {/* <Draggable/> */}
     </div>
   );
 }
