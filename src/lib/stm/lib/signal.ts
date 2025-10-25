@@ -165,16 +165,17 @@ export default function createStoreWithSignals<T extends object>(
     originSetStore?.(newData);
     signalsMap.clear();
     pathCache.clear();
-    store.$ = createSignal(newData, '');
+    const newRoot = createSignal(newData, '');
+    Object.assign(store.$, newRoot);
   };
 
   store.destroy = () => {
     originDestroy?.();
     signalsMap.clear();
     pathCache.clear();
-    (store.$ as any) = undefined;
+    // (store.$ as any) = undefined;
   };
-
+ 
   store.$ = createSignal(data, '');
 
   store.getSignal = (accessor) => {

@@ -8,23 +8,15 @@ import Slider from './shared/Slider';
 import { TodoApp } from './shared/Todo';
 
 function App() {
-  const store = useSignalStore({ count: 0 }); // { $: store } - это lifeHack только так шикарно работает сигнал
-
+  const store = useSignalStore({ count: 0 }); 
   return (
     <div className={ $.App }>
       <Slider />
-      <Button onClick={() => store.$.count.v++} className={$.MyButton}>
+      <Button onClick={ () => { 
+        store.$.count.v++
+      } } className={$.MyButton}>
         {store.$.count.c}
       </Button>
-      {/* <Button onClick={() => store.count.v++} className={$.MyButton}>
-        {store.count.c}
-      </Button>
-      <Slider />
-      <Slider />
-      <QueryExample /> */}
-      {/* <TodoApp/>  */}
-     {/* <ViewerModalWins/> */}
-      {/* <Draggable/> */}
     </div>
   );
 }

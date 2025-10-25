@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
 import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
 import type { ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
@@ -143,8 +143,12 @@ export function createSignal<T extends object>(
 
 export function useSignalStore<T extends object>(initialData: T): ReactSignalsStore<T> & ReactStore<T> {
   const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
-
   if (!ref.current) {
+    ref.current = initStore();
+    (ref.current as any)._initHook = true;
+  }
+
+  function initStore() {
     const store = createSignal(initialData, [], (signal) => {
       if (signal.v === null || typeof signal.v !== 'object') {
         defineSignalComponent(() => store, signal);
@@ -158,14 +162,15 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
         defineSignalMap(() => store, signal);
       }
     });
-
-    ref.current = store;
+    return store;
   }
 
   useLayoutEffect(() => {
+    if ((ref.current as any)._initHook) {
+      ref.current = initStore();
+    }
     return () => {
-      ref.current?.destroy?.();
-      ref.current = null;
+      ref.current?.destroy();
     };
   }, []);
 
