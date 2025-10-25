@@ -145,7 +145,7 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
   const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
   if (!ref.current) {
     ref.current = initStore();
-    // (ref.current as any)._initHook = true;
+    (ref.current as any)._initHook = true;
   }
 
   function initStore() {
