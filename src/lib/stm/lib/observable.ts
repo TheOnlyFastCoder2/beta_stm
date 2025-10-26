@@ -1,4 +1,12 @@
-import type { CoreUpdate, MetaData, Middleware, ObservableState, PathSubscribers, Subscribes } from '../types';
+import type {
+  CoreUpdate,
+  MetaData,
+  Middleware,
+  ObservableState,
+  PathSubscribers,
+  Subscribes,
+  UnSubscribe,
+} from '../types';
 
 import {
   calculateSnapshotHash,
@@ -100,29 +108,38 @@ export default function createObservableState<T extends object>(
   store.resolvePath = (accessor) => {
     return getPath<T>(data, accessor);
   };
+
+
   store.computed = function <R>(fn: () => R) {
     let value: R;
-    const dependencies = new Set<string>();
-
     const originalGet = store.get;
-    store.get = (accessor) => {
-      const path = getPath(data, accessor);
-      dependencies.add(path);
-      return originalGet(accessor);
+    let dependencies = new Set<string>();
+    const destroy: { current: UnSubscribe | null } = { current: null };
+
+    const compute = () => {
+      dependencies.clear();
+      store.get = (accessor) => {
+        const path = getPath(data, accessor);
+        dependencies.add(path);
+        return originalGet(accessor);
+      };
+
+      const result = fn();
+      store.get = originalGet;
+      return result;
     };
 
-    value = fn();
-    store.get = originalGet;
+    value = compute();
 
-    const destroy = store.subscribe(() => {
-      value = fn();
-    }, dependencies.values() as any);
+    destroy.current = store.subscribe(() => {
+      value = compute();
+    }, Array.from(dependencies));
 
     return {
       get: () => value,
       destroy: () => {
-        destroy();
-        dependencies.clear();
+        destroy.current?.();
+        dependencies?.clear?.();
       },
     };
   };
@@ -202,7 +219,7 @@ export default function createObservableState<T extends object>(
 
   store.subscribe = (callback, cacheKeys = []) => {
     const metaData = {
-      cacheKeys,
+      cacheKeys: cacheKeys,
       callback: () => {
         callback(data);
       },

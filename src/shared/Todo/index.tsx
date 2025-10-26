@@ -18,7 +18,7 @@ export function TodoApp() {
   const addTodo = () => {
     store.todos.push({ title: 'New task', done: false });
   };
-  
+
   const removeTodo = () => {
     store.todos.pop();
   };
@@ -29,7 +29,7 @@ export function TodoApp() {
         <TodoItem
           key={i}
           todo={todo}
-          remove={ () => {
+          remove={() => {
             store.todos.splice(i, 1);
           }}
           setActive={() => {
@@ -71,7 +71,9 @@ function TodoItem({
   const ref = todo.useComputed<HTMLInputElement, { myDiv: HTMLDialogElement }>(({ current: el, myDiv }) => {
     el.checked = todo.done.v;
     myDiv.style.background = todo.done.v ? 'red' : 'green';
+    console.log(todo.done._metaPath)
   });
+
   return (
     <div ref={ref.get('myDiv')} className={$.TodoItem}>
       <input

@@ -154,6 +154,11 @@ function notifyPathSubscribers<T>(normalizedKey: string, pathSubscribers: PathSu
   for (const [subPath, subs] of pathSubscribers.entries()) {
     subs.forEach((metaData) => {
       const shouldNotifyCache = shouldNotifyForCacheKeys(metaData, normalizedKey, data);
+      const valueAtPath = getValue(metaData.path || subPath, data);
+      if (valueAtPath === undefined) {
+        metaData.unsubscribe?.();
+        return;
+      }
       if (subPath === normalizedKey || subPath.startsWith(normalizedKey + '.') || shouldNotifyCache) {
         metaData.callback();
       }
@@ -162,7 +167,22 @@ function notifyPathSubscribers<T>(normalizedKey: string, pathSubscribers: PathSu
 }
 
 function notifyGlobalsSub(normalizedKey: string, subscribers: Subscribes, data: any) {
-  subscribers.forEach((metaData) => {
+  Array.from(subscribers).forEach((metaData) => {
+    if (!subscribers.has(metaData)) return;
+    if (!Array.isArray(metaData.cacheKeys) || metaData.cacheKeys.length === 0) {
+      metaData.callback();
+      return;
+    }
+
+    metaData.cacheKeys = metaData.cacheKeys.filter(
+      (key) => typeof key === 'string' && getValue(key, data) !== undefined
+    );
+
+    if (metaData.cacheKeys.length === 0) {
+      metaData.unsubscribe?.();
+      return;
+    }
+
     if (shouldNotifyByCacheKeys(metaData, normalizedKey, data)) {
       metaData.callback();
     }
@@ -311,7 +331,9 @@ export function wrapSignalArray(
   node: any,
   basePath: string,
   store: any,
-  createSignal: (value: any, basePath?: string, setIsOnlyPath?:boolean) => any
+  reIndexSignal: (signal: any, basePath: string) => void,
+  createSignal: (signal: any, basePath: string) => void,
+  removeCacheKeys: (path: string) => void
 ) {
   if (!Array.isArray(node) || (node as any)._isWrapped) return node;
 
@@ -319,7 +341,7 @@ export function wrapSignalArray(
     (WrapArray.prototype as any)[method] = function (...args: any[]) {
       const arr = this as any[];
       let startIndex = 0;
-
+      const oldLength = arr.length;
       //prettier-ignore
       switch (method) {
         case 'push': break;
@@ -351,10 +373,18 @@ export function wrapSignalArray(
         case 'splice':
         case 'sort':
         case 'reverse':
-          for (let i = startIndex; i < arr.length; i++) {
-            const newSignal = createSignal(store.get(`${basePath}.${i}`), `${basePath}.${i}`, true);
-            arr[i] = newSignal;
+          if (arr.length < oldLength) {
+            for (let i = arr.length; i < oldLength; i++) {
+              removeCacheKeys(`${basePath}.${i}`);
+            }
           }
+          for (let i = startIndex; i < arr.length; i++) {
+            const item = arr[i];
+            if (item && typeof item === 'object') {
+              reIndexSignal(item, `${basePath}.${i}`);
+            }
+          }
+
           break;
       }
 

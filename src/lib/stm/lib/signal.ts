@@ -11,12 +11,7 @@ export default function createStoreWithSignals<T extends object>(
   const pathCache = new Map<string, { parentPath: string; key: string }>();
   const signalsMap = new Map<string, any>();
 
-  function defineVProp(target: any, path: string, setIsOnlyPath = false) {
-    if (setIsOnlyPath) {
-      target._metaPath = path;
-      return;
-    }
-
+  function defineVProp(target: any, path: string) {
     const createSignal = (updateMethod: 'update' | 'update.quiet') => {
       const isQuiet = updateMethod === 'update.quiet';
       const property = !isQuiet ? 'v' : 'q';
@@ -36,16 +31,38 @@ export default function createStoreWithSignals<T extends object>(
     signalsMap.set(path, target);
   }
 
-  function createSignal(value: any, basePath = '', setIsOnlyPath = false) {
-    const stack = [{ value, path: basePath }];
+  function removeCacheKeys(path: string) {
+    signalsMap.delete(path);
+    pathCache.delete(path);
+  }
 
+  function reIndexSignal(signal: any, basePath: string) {
+    const stack = [{ node: signal, path: basePath }];
+
+    while (stack.length > 0) {
+      const { node, path } = stack.pop()!;
+      if (!node || typeof node !== 'object') continue;
+
+          node._metaPath = path;
+        defineProperty?.(node)
+
+      for (const key in node) {
+        if (node[key] && typeof node[key] === 'object') {
+          stack.push({ node: node[key], path: `${path}.${key}` });
+        }
+      }
+    }
+  }
+
+  function createSignal(value: any, basePath = '') {
+    const stack = [{ value, path: basePath }];
     while (stack.length > 0) {
       const { value: currentValue, path: currentPath } = stack[stack.length - 1];
 
       // Если это примитив - создаем сигнал и убираем из стека
       if (currentValue === null || typeof currentValue !== 'object') {
         const signal = {};
-        defineVProp(signal, currentPath, setIsOnlyPath);
+        defineVProp(signal, currentPath);
         stack.pop();
         continue;
       }
@@ -71,8 +88,8 @@ export default function createStoreWithSignals<T extends object>(
         if (hasUnprocessedChild) continue;
 
         // Все дети обработаны — создаем сигнал для массива
-        wrapSignalArray(arrSignals, currentPath, store, createSignal);
-        defineVProp(arrSignals, currentPath, setIsOnlyPath);
+        wrapSignalArray(arrSignals, currentPath, store, reIndexSignal, createSignal, removeCacheKeys);
+        defineVProp(arrSignals, currentPath);
         stack.pop();
         continue;
       }
@@ -96,7 +113,7 @@ export default function createStoreWithSignals<T extends object>(
         const childPath = currentPath ? `${currentPath}.${key}` : key;
         signal[key] = signalsMap.get(childPath);
       }
-      defineVProp(signal, currentPath, setIsOnlyPath);
+      defineVProp(signal, currentPath);
       stack.pop();
     }
 
@@ -174,7 +191,7 @@ export default function createStoreWithSignals<T extends object>(
     pathCache.clear();
     (store.$ as any) = undefined;
   };
- 
+
   store.$ = createSignal(data, '');
 
   store.getSignal = (accessor) => {

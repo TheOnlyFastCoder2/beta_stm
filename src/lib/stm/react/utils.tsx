@@ -62,7 +62,7 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
   const originMap = (signal as any).map;
 
   const newMap = (renderFn: (item: Signal<any>, index: number) => React.ReactNode) => {
-    const cache = new WeakMap<Signal<any>, React.ReactElement<{ value: any }>>();
+    const cache = new Map<string, React.ReactElement<{ value: any }>>();
 
     const Component = React.memo(() => {
       const store = cbStore();
@@ -70,17 +70,16 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
       const _signal = store.getSignal(signal._metaPath as any);
 
       return originMap.call(_signal, (item: Signal<any>, i: number) => {
-        const prev = cache.get(item);
-        
-        if (prev && prev.props.value === item) return prev;
-        const SignalComponent = React.memo((_: { value: any }) => renderFn(item, i), 
-          (prevProps, nextProps) => prevProps.value === nextProps.value
-        );
+         if (!item) return null;
+        const prev = cache.get(item._metaPath+i);
+
+        if (prev && prev.props.value === item.v) return prev;
+        const SignalComponent = React.memo((_: { value: any }) => renderFn(item, i));
 
         SignalComponent.displayName = item._metaPath;
 
-        const element = <SignalComponent key={item._metaPath} value={item} />;
-        cache.set(item, element);
+        const element = <SignalComponent key={item._metaPath+''+i} value={item.v} />;
+        cache.set(item._metaPath+i, element);
 
         return element;
       });

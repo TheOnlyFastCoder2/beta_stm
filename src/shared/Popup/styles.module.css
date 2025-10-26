@@ -41,7 +41,7 @@
   .header {
     display: flex;
     gap: 10px;
-    button {
+  button {
       padding: 5px 10px;
     }
   }
