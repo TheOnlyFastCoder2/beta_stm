@@ -38,39 +38,3 @@ export default function stm<T extends object>(
 
   return createObservableState(data, middlewares);
 }
-
-// const store = stm({
-//   todos: [
-//     { title: 'Learn STM', done: false },
-//     { title: 'Learn React', done: false },
-//     { title: 'Learn LOL', done: false },
-//   ],
-// });
-
-// store.get(($) => $.todos).forEach((_, index) => {
-//   store.computed(() => {
-//     store.get(($, t) => $.todos[t(index)]);
-//   })
-// })
-  
-// store.update(
-//   ($) => $.todos,
-//   (state) => {
-//     state.splice(1, 1);
-//     return state;
-//   }
-// );
-
-
-  
-// store.update(
-//   ($) => $.todos,
-//   (state) => {
-//     state.unshift();
-//     return state;
-//   }
-// );
-
-// console.log(store.getInfo())
-// // console.log(store.get(($) => $.todos));
-

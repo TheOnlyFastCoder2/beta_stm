@@ -26,10 +26,10 @@ export default function createObservableState<T extends object>(
   data: T,
   middlewares: Middleware<T>[] = []
 ): ObservableState<T> {
+  const store: ObservableState<T> = {} as any;
   const subscribers: Subscribes = new Set();
   const pathSubscribers: PathSubscribers = new Map();
 
-  const store: ObservableState<T> = {} as any;
   const primitiveMetaMap = new Map<string, MetaData>();
   let metaMap = new WeakMap<object, MetaData>();
 
@@ -72,7 +72,7 @@ export default function createObservableState<T extends object>(
     notifyInvalidate(path, subscribers, pathSubscribers, data);
     return true;
   };
-
+  
   function startBatch() {
     batchDepth++;
   }
@@ -168,6 +168,7 @@ export default function createObservableState<T extends object>(
   store.update.quiet = (accessor, cbOrVal) => {
     return store.update(accessor, cbOrVal, { quiet: true });
   };
+  
 
   store.setStore = (newData: T) => {
     store.destroy();
@@ -273,5 +274,6 @@ export default function createObservableState<T extends object>(
     wrappedUpdate(path as any, newVal, opts);
   };
   store.update.quiet = originQuiet;
+
   return store;
 }

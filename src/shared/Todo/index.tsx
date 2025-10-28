@@ -11,7 +11,7 @@ export function TodoApp() {
     todos: [
       { title: 'Learn STM', done: false },
       { title: 'Learn React', done: false },
-      { title: 'Learn React', done: false },
+      { title: 'Learn lOL', done: false },
     ],
   });
 
@@ -28,9 +28,11 @@ export function TodoApp() {
       {store.todos.map((todo, i) => (
         <TodoItem
           key={i}
+
           todo={todo}
           remove={() => {
             store.todos.splice(i, 1);
+            // store.todos.reverse()
           }}
           setActive={() => {
             const input = refInput.current;
@@ -45,6 +47,7 @@ export function TodoApp() {
       ))}
       <button onClick={addTodo}>Add Todo</button>
       <button onClick={removeTodo}>remove Todo</button>
+      <button onClick={store.todos.reverse}>reverse Todo</button>
       <input
         ref={refInput}
         type="text"
@@ -71,7 +74,6 @@ function TodoItem({
   const ref = todo.useComputed<HTMLInputElement, { myDiv: HTMLDialogElement }>(({ current: el, myDiv }) => {
     el.checked = todo.done.v;
     myDiv.style.background = todo.done.v ? 'red' : 'green';
-    console.log(todo.done._metaPath)
   });
 
   return (

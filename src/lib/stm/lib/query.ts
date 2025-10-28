@@ -105,6 +105,7 @@ export function createQuery<TData extends object, TParams extends object = any, 
   }
 
   async function runFetch(params?: TParams, postData?: PostData): Promise<TData> {
+    
     store.update.quiet(
       (s) => s.version,
       (v) => v + 1

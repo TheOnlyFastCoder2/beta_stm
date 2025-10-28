@@ -65,7 +65,7 @@ export function ViewerModalWins() {
         <button onClick={() => (st.type.v = 'Modal2')}>Modal2</button>
       </div>
 
-      <Popup impRef={ref} mode="overlay" delay={500}>
+      <Popup impRef={ref} mode="normal" delay={500}>
         <DraggableTest>
           <Active sg={st.type} is={'Modal1'}>
             <Modal1 />

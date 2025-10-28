@@ -140,3 +140,24 @@ export interface StoreWithSignals<T extends object, R extends object = {}> exten
   $: Signal<T, R>;
   getSignal: <P extends Accessor<T>>(accessor: P) => Signal<ExtractPathReturn<T, P>, R>;
 }
+
+export type SSRStore<T extends object> = ObservableState<T> & {
+  snapshot: () => Promise<T>;
+  getSerializedStore: (type: 'window' | 'scriptTag' | 'serializedData') => Promise<string>;
+  getSSRStoreId: () => number;
+  hydrate: () => void;
+  hydrateWithDocument: (delay?: number, callback?: () => void) => void;
+  getIsSSR: () => boolean;
+
+  updateSSR: {
+    <P extends Accessor<T>, E extends ExtractPathReturn<T, P>>(
+      accessor: P,
+      cbOrVal: E | ((v: E) => E),
+      options?: { quiet?: boolean }
+    ): Promise<isUpdated>;
+    quiet: <P extends Accessor<T>, E extends ExtractPathReturn<T, P>>(
+      accessor: P,
+      cbOrVal: E | ((v: E) => E)
+    ) => Promise<isUpdated>;
+  };
+};

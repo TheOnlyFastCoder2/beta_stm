@@ -5,13 +5,23 @@ import createObservableState from './observable';
 export default function createStoreWithSignals<T extends object>(
   data: T,
   middlewares: Middleware<T>[] = [],
-  defineProperty?: (signal: Signal<T>) => void
+  defineProperty?: (signal: Signal<T>) => void,
 ): StoreWithSignals<T> {
   const store = createObservableState(data, middlewares) as StoreWithSignals<T>;
   const pathCache = new Map<string, { parentPath: string; key: string }>();
   const signalsMap = new Map<string, any>();
+  let __sid = 0;
 
   function defineVProp(target: any, path: string) {
+    if (!('_sid' in target)) {
+      Object.defineProperty(target, '_sid', {
+        value: (++__sid).toString(36),
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
+    }
+
     const createSignal = (updateMethod: 'update' | 'update.quiet') => {
       const isQuiet = updateMethod === 'update.quiet';
       const property = !isQuiet ? 'v' : 'q';
@@ -39,19 +49,29 @@ export default function createStoreWithSignals<T extends object>(
   function reIndexSignal(signal: any, basePath: string) {
     const stack = [{ node: signal, path: basePath }];
 
-    while (stack.length > 0) {
-      const { node, path } = stack.pop()!;
-      if (!node || typeof node !== 'object') continue;
+    store.batch(() => {
+      while (stack.length) {
+        const { node, path } = stack.pop()!;
+        if (!node || typeof node !== 'object') continue;
 
-          node._metaPath = path;
-        defineProperty?.(node)
+        const oldPath = node._metaPath;
+        if (oldPath && oldPath !== path) {
+          signalsMap.delete(oldPath);
+          signalsMap.set(path, node);
+        } else if (!oldPath) {
+          signalsMap.set(path, node);
+        }
+        node._metaPath = path;
+        store.update.quiet(path as any, node.v);
 
-      for (const key in node) {
-        if (node[key] && typeof node[key] === 'object') {
-          stack.push({ node: node[key], path: `${path}.${key}` });
+        for (const key in node) {
+          const child = node[key];
+          if (child && typeof child === 'object' && '_metaPath' in child) {
+            stack.push({ node: child, path: `${path}.${key}` });
+          }
         }
       }
-    }
+    });
   }
 
   function createSignal(value: any, basePath = '') {

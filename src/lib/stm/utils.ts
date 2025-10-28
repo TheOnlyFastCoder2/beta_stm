@@ -1,4 +1,14 @@
-import type { Accessor, MetaData, MetaWeakMap, PathSubscribers, Subscribes, SubsMetaData } from './types';
+import type {
+  Accessor,
+  isUpdated,
+  MetaData,
+  MetaWeakMap,
+  ObservableState,
+  PathSubscribers,
+  SSRStore,
+  Subscribes,
+  SubsMetaData,
+} from './types';
 
 function getNormalizedBodyWithArgs(str: string): [string[], string] {
   let start = -1;
@@ -130,26 +140,29 @@ export const setValue = <T>(path: string, data: T, newValue: any): T => {
 };
 
 // ***notification*** start//
-function shouldNotifyByCacheKeys(metaData: Omit<SubsMetaData, 'path'>, normalizedKey: string, data: any): boolean {
+function shouldNotifyByCacheKeys(metaData: Omit<SubsMetaData, 'path'>, normalizedKey: string, data: any) {
   const { cacheKeys } = metaData;
   if (!Array.isArray(cacheKeys) || cacheKeys.length === 0) return true;
 
-  return !!cacheKeys?.some((key) => {
-    const path = getPath(data, key);
-    return normalizedKey === path || normalizedKey.startsWith(path + '.');
+  return cacheKeys.some((key) => {
+    const dep = getPath(data, key);
+    return (
+      normalizedKey === dep || normalizedKey.startsWith(dep + '.') || dep.startsWith(normalizedKey + '.') // <-- родитель затронул потомка
+    );
   });
 }
 
-function shouldNotifyForCacheKeys(metaData: { cacheKeys?: any[] }, normalizedKey: string, data: any): boolean {
+function shouldNotifyForCacheKeys(metaData: { cacheKeys?: any[] }, normalizedKey: string, data: any) {
   const { cacheKeys } = metaData;
   if (!Array.isArray(cacheKeys) || cacheKeys.length === 0) return false;
 
-  return !!cacheKeys?.some((key) => {
-    const path = getPath(data, key);
-    return normalizedKey === path || normalizedKey.startsWith(path + '.');
+  return cacheKeys.some((key) => {
+    const dep = getPath(data, key);
+    return (
+      normalizedKey === dep || normalizedKey.startsWith(dep + '.') || dep.startsWith(normalizedKey + '.') // <-- то же правило
+    );
   });
 }
-
 function notifyPathSubscribers<T>(normalizedKey: string, pathSubscribers: PathSubscribers, data: T) {
   for (const [subPath, subs] of pathSubscribers.entries()) {
     subs.forEach((metaData) => {
@@ -169,17 +182,16 @@ function notifyPathSubscribers<T>(normalizedKey: string, pathSubscribers: PathSu
 function notifyGlobalsSub(normalizedKey: string, subscribers: Subscribes, data: any) {
   Array.from(subscribers).forEach((metaData) => {
     if (!subscribers.has(metaData)) return;
+
     if (!Array.isArray(metaData.cacheKeys) || metaData.cacheKeys.length === 0) {
       metaData.callback();
       return;
     }
 
-    metaData.cacheKeys = metaData.cacheKeys.filter(
-      (key) => typeof key === 'string' && getValue(key, data) !== undefined
-    );
-
+    console.log(metaData.cacheKeys);
     if (metaData.cacheKeys.length === 0) {
-      metaData.unsubscribe?.();
+      metaData.callback();
+
       return;
     }
 
@@ -220,6 +232,7 @@ export function notifyBatchInvalidate<T>(
     });
   }
 }
+
 // ***notification*** end//
 
 // ***metadata*** start//
@@ -297,36 +310,24 @@ export function getRandomId() {
   return `${Math.floor(performance.now()).toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-const MUTATING_METHODS = {
-  array: ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin'],
-};
+const MUTATING_METHODS = [
+  'push',
+  'pop',
+  'shift',
+  'unshift',
+  'splice',
+  'sort',
+  'reverse',
+  'fill',
+  'copyWithin',
+] as const;
 
-export class WrapArray extends Array {
-  constructor(...args: any[]) {
-    super(...args);
-  }
-}
+type MutatingMethod = (typeof MUTATING_METHODS)[number];
 
-export function wrapArrayMethods(node: any, metaMap: WeakMap<object, MetaData>) {
-  if (!Array.isArray(node) || getMetaData(metaMap, node)?._isWrapped) return node;
-  MUTATING_METHODS.array.forEach((method: any) => {
-    WrapArray.prototype[method] = function (...args: any[]) {
-      withMetaSupport(this, () => {
-        setMetaData(metaMap, this, {
-          _prevSignature: 'CHANGED_METHOD',
-          _mutated: true,
-          _isWrapped: true,
-        });
-      });
-      return Array.prototype[method].apply(this, args);
-    };
-  });
+const WRAPPED_FLAG: unique symbol = Symbol('array_is_wrapped');
 
-  Object.setPrototypeOf(node, WrapArray.prototype);
-  setMetaData(metaMap, node, { _isWrapped: true });
+const normalizeStart = (start: number, len: number) => (start < 0 ? Math.max(len + start, 0) : Math.min(start, len));
 
-  return node as WrapArray;
-}
 export function wrapSignalArray(
   node: any,
   basePath: string,
@@ -335,66 +336,93 @@ export function wrapSignalArray(
   createSignal: (signal: any, basePath: string) => void,
   removeCacheKeys: (path: string) => void
 ) {
-  if (!Array.isArray(node) || (node as any)._isWrapped) return node;
+  if (!Array.isArray(node) || (node as any)[WRAPPED_FLAG]) return node;
 
-  MUTATING_METHODS.array.forEach((method) => {
-    (WrapArray.prototype as any)[method] = function (...args: any[]) {
-      const arr = this as any[];
-      let startIndex = 0;
-      const oldLength = arr.length;
-      //prettier-ignore
-      switch (method) {
-        case 'push': break;
-        case 'pop': break;
-        case 'unshift': startIndex = 0; break;
-        case 'shift': startIndex = 0;  break;
-        case 'splice': startIndex = args[0] ?? 0;break;
-        case 'sort':
-        case 'reverse':
-          startIndex = 0;
-          break;
-      }
+  const defineInstanceMethod = (method: MutatingMethod) => {
+    const orig = (Array.prototype as any)[method];
 
-      const newArgs = args.map((arg, i) => {
-        const isToWrap = method === 'push' || method === 'unshift' || (method === 'splice' && i >= 2);
-        return isToWrap ? createSignal(arg, `${basePath}.${arr.length + i}`) : arg;
-      });
+    Object.defineProperty(node, method, {
+      configurable: true,
+      enumerable: false,
+      writable: true,
+      value: function (...args: any[]) {
+        return store.batch(() => {
+          const arr = node as any[];
+          const oldLength = arr.length;
 
-      const result = (Array.prototype as any)[method].apply(arr, newArgs);
+          let startIndex = 0;
+          //prettier-ignore
+          switch (method) {
+          case 'push': break;
+          case 'pop': break;
+         
+          case 'unshift':
+          case 'shift':
+          case 'sort':
+          case 'reverse':
+          case 'fill':
+          case 'copyWithin': startIndex = 0; break;
+          case 'splice': 
+            const rawStart = args[0] ?? 0;
+            startIndex = normalizeStart(rawStart, arr.length);
+            break;
+        }
 
-      store.update(basePath, (oldVal: any[]) => {
-        (Array.prototype as any)[method].apply(oldVal, args);
-        return oldVal;
-      });
+          const newArgs = args.map((arg, i) => {
+            const isToWrap = method === 'push' || method === 'unshift' || (method === 'splice' && i >= 2);
+            // `${basePath}.${arr.length + i}` заглушка, все равно будет выполняться reIndexSignal
+            return isToWrap ? createSignal(arg, `${basePath}.${arr.length + i}`) : arg;
+          });
 
-      switch (method) {
-        case 'unshift':
-        case 'shift':
-        case 'splice':
-        case 'sort':
-        case 'reverse':
-          if (arr.length < oldLength) {
-            for (let i = arr.length; i < oldLength; i++) {
-              removeCacheKeys(`${basePath}.${i}`);
+          const result = orig.apply(arr, newArgs);
+          store.update(basePath, (oldVal: any[]) => {
+            (Array.prototype as any)[method].apply(oldVal, args);
+            return oldVal;
+          });
+
+          switch (method) {
+            case 'unshift':
+            case 'shift':
+            case 'splice':
+            case 'sort':
+            case 'reverse':
+            case 'fill':
+            case 'copyWithin': {
+              if (arr.length < oldLength) {
+                for (let i = arr.length; i < oldLength; i++) {
+                  removeCacheKeys(`${basePath}.${i}`);
+                }
+              }
+              for (let i = startIndex; i < arr.length; i++) {
+                const item = arr[i];
+                if (item && typeof item === 'object') {
+                  reIndexSignal(item, `${basePath}.${i}`);
+                }
+              }
+              break;
             }
           }
-          for (let i = startIndex; i < arr.length; i++) {
-            const item = arr[i];
-            if (item && typeof item === 'object') {
-              reIndexSignal(item, `${basePath}.${i}`);
-            }
-          }
 
-          break;
-      }
+          return result;
+        });
+      },
+    });
+  };
 
-      return result;
-    };
+  for (const m of MUTATING_METHODS) {
+    defineInstanceMethod(m);
+  }
+
+  Object.defineProperty(node, WRAPPED_FLAG, {
+    value: true,
+    configurable: false,
+    enumerable: false,
+    writable: false,
   });
 
-  Object.setPrototypeOf(node, WrapArray.prototype);
   (node as any)._isWrapped = true;
-  return node as WrapArray;
+
+  return node;
 }
 
 export function initializeValue<T extends object>(
@@ -406,9 +434,8 @@ export function initializeValue<T extends object>(
     withMetaSupport(node, () => {
       const snapshot = calculateSnapshotHash(node);
       if (!snapshot) return;
-      const wrapped = wrapArrayMethods(node, metaMap);
 
-      setMetaData(metaMap, wrapped, { _prevSignature: snapshot }, primitiveMetaMap, path);
+      setMetaData(metaMap, node, { _prevSignature: snapshot }, primitiveMetaMap, path);
     });
   }
 }
@@ -456,4 +483,77 @@ export function* iterateObjectTree(
       }
     }
   }
+}
+
+let ssrCountId = 0;
+export const getCheckIsSSR = () => typeof window === 'undefined';
+
+export function ssrStore<T extends object>(store: ObservableState<T>) {
+  const ssrStoreId = ssrCountId++;
+  const ssrEnhancedStore = store as SSRStore<T>;
+  let lastPromise: Promise<void> = Promise.resolve();
+
+  function enqueueUpdate(fn: (...args: any[]) => Promise<isUpdated>) {
+    return (...args: any[]) => {
+      const next = lastPromise.then(async () => {
+        const result = await fn(...args);
+        if (result === false) {
+          return Promise.resolve();
+        }
+        return;
+      });
+      lastPromise = next.catch(() => {});
+      return next;
+    };
+  }
+
+  ssrEnhancedStore.updateSSR = enqueueUpdate(store.update as any) as any;
+  ssrEnhancedStore.updateSSR.quiet = enqueueUpdate(store.update.quiet as any) as any;
+
+  ssrEnhancedStore.getIsSSR = () => typeof window === 'undefined';
+  ssrEnhancedStore.getSSRStoreId = () => ssrStoreId;
+
+  ssrEnhancedStore.snapshot = async () => {
+    try {
+      await lastPromise;
+      return store.getRawStore();
+    } catch (error) {
+      console.error('Failed to create snapshot:', error);
+      throw error;
+    }
+  };
+
+  ssrEnhancedStore.getSerializedStore = async (type: 'window' | 'scriptTag' | 'serializedData') => {
+    const snapshot = await ssrEnhancedStore.snapshot();
+    const serialized = JSON.stringify(snapshot);
+    return {
+      window: `window['${ssrStoreId}'] = ${serialized};`,
+      scriptTag: `<script id="${ssrStoreId}" type="application/json">${serialized}</script>`,
+      serializedData: serialized,
+    }[type];
+  };
+
+  // Метод для гидратации состояния на клиенте
+  ssrEnhancedStore.hydrate = () => {
+    if (!ssrEnhancedStore.getIsSSR() && (window as any)[ssrStoreId]) {
+      const stateElement = document.getElementById(ssrStoreId.toString());
+      ssrEnhancedStore.setRawStore((window as any)[ssrStoreId]);
+      delete (window as any)[ssrStoreId];
+      stateElement?.remove();
+    }
+  };
+
+  // Метод для гидратации с задержкой
+  ssrEnhancedStore.hydrateWithDocument = (delay = 0, callback?: () => void) => {
+    if (!ssrEnhancedStore.getIsSSR()) {
+      window.onload = () => {
+        setTimeout(() => {
+          ssrEnhancedStore.hydrate();
+          callback?.();
+        }, delay);
+      };
+    }
+  };
+
+  return ssrEnhancedStore;
 }

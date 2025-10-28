@@ -71,15 +71,15 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
 
       return originMap.call(_signal, (item: Signal<any>, i: number) => {
          if (!item) return null;
-        const prev = cache.get(item._metaPath+i);
+        const prev = cache.get(item._metaPath);
 
         if (prev && prev.props.value === item) return prev;
-        const SignalComponent = React.memo((_: { value: any }) => renderFn(item, i));
+        const SignalComponent = React.memo((_: { value: Signal<any> }) => renderFn(item, i));
 
         SignalComponent.displayName = item._metaPath;
 
-        const element = <SignalComponent key={item._metaPath+''+i} value={item} />;
-        cache.set(item._metaPath+i, element);
+        const element = <SignalComponent key={item._metaPath} value={item} />;
+        cache.set(item._metaPath, element);
 
         return element;
       });

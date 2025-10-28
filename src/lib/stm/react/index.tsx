@@ -73,7 +73,7 @@ export default function createReactStore<T extends object, TParams extends objec
   store.useComputed = cr_useComputed(() => store);
 
   store.useField = (path, options) => {
-    const [value] = store.useStore([path], options);
+    const [value] = store.useStore([path], options); 
     const setValue = function (valueOrFunc: any) {
       store.update(path, valueOrFunc);
     };
