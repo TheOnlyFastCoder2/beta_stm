@@ -21,7 +21,7 @@ interface DefaultProps {
 
 export function Switch<T>({ sg, children }: SwitchProps<T>) {
   const { $: store } = useSignalStore({
-    isDefault: false, // ✅ Default виден до первого совпадения
+    isDefault: false,
     count: [0, 0],
     len: React.Children.count(children),
   });
