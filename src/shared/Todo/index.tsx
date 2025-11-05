@@ -25,6 +25,7 @@ export function TodoApp() {
   return (
     <div>
       <h1>Todos</h1>
+      
       {store.todos.map((todo, i) => (
         <TodoItem
           key={i}
@@ -56,6 +57,7 @@ export function TodoApp() {
           store.todos[store.activeIndex.v].title.v = currentTarget.value;
         }}
       />
+   
     </div>
   );
 }

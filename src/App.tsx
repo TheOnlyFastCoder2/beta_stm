@@ -5,6 +5,7 @@ import Draggable from './shared/Draggable';
 import Popup, { ViewerModalWins } from './shared/Popup';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';
+import Switcher from './shared/Switcher';
 import { TodoApp } from './shared/Todo';
 
 function App() {
@@ -18,7 +19,8 @@ function App() {
       {/* <QueryExample /> */}
       <TodoApp />
       {/* <ViewerModalWins /> */}
-      {/* <Draggable/> */}
+      {/* <Draggable/> */ }
+      <Switcher/>
     </div>
   );
 }
