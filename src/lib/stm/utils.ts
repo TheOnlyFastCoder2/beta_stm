@@ -188,7 +188,7 @@ function notifyGlobalsSub(normalizedKey: string, subscribers: Subscribes, data: 
       return;
     }
 
-    console.log(metaData.cacheKeys);
+
     if (metaData.cacheKeys.length === 0) {
       metaData.callback();
 

@@ -1,6 +1,7 @@
 import { useRef, type PropsWithChildren } from 'react';
 import $ from './styles.module.css';
-import { Draggable, type DraggableImpRef } from '../../lib/stm/react/components';
+import { Draggable, type DraggableImpRef } from '../../lib/stm/react/lib/Draggable';
+
 
 export default function DraggableTest({ children }:PropsWithChildren) {
   const ref = useRef<Partial<DraggableImpRef>>({});

@@ -1,5 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
-import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type PropsWithChildren,
+} from 'react';
+import type {
+  Accessor,
+  CacheKey,
+  Middleware,
+  ObservableState,
+  Signal,
+  StoreWithSignals,
+} from '../types';
 import type { ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
 import stm from '..';
@@ -38,14 +52,19 @@ export default function createReactStore<T extends object, TParams extends objec
     defineProperty as any
   ) as any;
 
-  const getSnapshotValues = <P extends readonly Accessor<T>[]>(cacheKeys: CacheKey<T>[]): useStoreReturn<T, P> => {
+  const getSnapshotValues = <P extends readonly Accessor<T>[]>(
+    cacheKeys: CacheKey<T>[]
+  ): useStoreReturn<T, P> => {
     return cacheKeys.map((p) => store.get(p as any)) as useStoreReturn<T, P>;
   };
 
-  store.useStore = <P extends readonly Accessor<T>[]>(paths: P, options: { cacheKeys?: CacheKey<T>[] }) => {
+  store.useStore = <P extends readonly Accessor<T>[]>(
+    paths: P,
+    options: { cacheKeys?: CacheKey<T>[] }
+  ) => {
     const cacheKeys = [...paths, ...(options?.cacheKeys ?? [])];
     const snapshotRef = useRef<useStoreReturn<T, P>>(getSnapshotValues(cacheKeys));
-
+     const getServerSnapshot = () => snapshotRef.current;
     const getSnapshot = () => snapshotRef.current;
     const subscribe = (onChange: () => void) => {
       return store.subscribe(() => {
@@ -54,7 +73,7 @@ export default function createReactStore<T extends object, TParams extends objec
       }, cacheKeys);
     };
 
-    return useSyncExternalStore(subscribe, getSnapshot);
+    return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   };
 
   store.useEffect = (cacheKeys = [], callback: Function) => {
@@ -62,6 +81,7 @@ export default function createReactStore<T extends object, TParams extends objec
 
     useEffect(() => {
       if (!cacheKeys.length) return;
+
       callback?.(snapshotRef.current);
       return store.subscribe(() => {
         snapshotRef.current = getSnapshotValues(cacheKeys as any);
@@ -70,10 +90,10 @@ export default function createReactStore<T extends object, TParams extends objec
     }, []);
   };
 
-  store.useComputed = cr_useComputed(() => store);
+  store.useComputed = cr_useComputed(() => store) as any;
 
   store.useField = (path, options) => {
-    const [value] = store.useStore([path], options); 
+    const [value] = store.useStore([path], options);
     const setValue = function (valueOrFunc: any) {
       store.update(path, valueOrFunc);
     };
@@ -98,22 +118,23 @@ interface createQueryInstance<
   LocalState extends object,
   T extends object,
   TParams extends object,
-  PostData extends object = any
+  PostData extends object = any,
 > extends QueryInstance<LocalState, TParams, PostData>,
     ReactStore<LocalState> {
   useQuery: (params?: TParams) => QueryState<T>;
 }
 
-export function createQueryReact<TData extends object, TParams extends object = any, PostData extends object = any>(
+export function createQueryReact<
+  TData extends object,
+  TParams extends object = any,
+  PostData extends object = any,
+>(
   data: QueryOptions<TData, TParams, PostData>,
   middlewares?: Middleware<QueryOptions<TData, TParams, PostData>>[]
 ): createQueryInstance<LocalState<TData>, TData, TParams, PostData> {
-  const store = createReactStore(data as any, middlewares as any, { isQuery: true }) as any as createQueryInstance<
-    LocalState<TData>,
-    TData,
-    TParams,
-    PostData
-  >;
+  const store = createReactStore(data as any, middlewares as any, {
+    isQuery: true,
+  }) as any as createQueryInstance<LocalState<TData>, TData, TParams, PostData>;
 
   store.useQuery = (params) => {
     const [values] = store.useField(($) => $.current);
@@ -136,19 +157,7 @@ export function createSignal<T extends object>(
     data,
     middlewares,
     { isSignals: true },
-    defineProperty
-  ) as any;
-  return store;
-}
-
-export function useSignalStore<T extends object>(initialData: T): ReactSignalsStore<T> & ReactStore<T> {
-  const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
-  if (!ref.current) {
-    ref.current = initStore();
-  }
-
-  function initStore() {
-    const store = createSignal(initialData, [], (signal) => {
+    (signal) => {
       if (signal.v === null || typeof signal.v !== 'object') {
         defineSignalComponent(() => store, signal);
       }
@@ -160,7 +169,21 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
       if (Array.isArray(signal.v)) {
         defineSignalMap(() => store, signal);
       }
-    });
+    }
+  ) as any;
+  return store;
+}
+
+export function useSignalStore<T extends object>(
+  initialData: T
+): ReactSignalsStore<T> & ReactStore<T> {
+  const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
+  if (!ref.current) {
+    ref.current = initStore();
+  }
+
+  function initStore() {
+    const store = createSignal(initialData, []);
     return store;
   }
   return ref.current;

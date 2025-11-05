@@ -4,45 +4,48 @@ import React from 'react';
 import type { ReactSignalsStore, ReactStore, RefMap } from './types';
 
 export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T) {
-  function useComputed<MainEl extends HTMLElement, ExtraRefs extends Record<string, HTMLElement> = {}>(
+  function useComputed<
+    MainEl extends HTMLElement,
+    ExtraRefs extends Record<string, HTMLElement> = {},
+  >(
     fn: (refs: RefMap<MainEl> & ExtraRefs) => void
-  ): RefMap<MainEl> & ExtraRefs {
-    const mainRef = useRef<MainEl>(null);
+  ): RefMap<MainEl> & ExtraRefs & { get: (key: string) => React.RefObject<any> } {
     const extraRefs = useRef<Record<string, React.RefObject<any>>>({});
 
     const get = (key: string) => {
       return (extraRefs.current[key] ??= { current: null });
     };
 
-    function mergeRefs() {
-      const mergedRefs = {} as any;
-      mergedRefs.get = get;
-      mergedRefs.current = mainRef.current;
-      for (const key in extraRefs.current) {
-        mergedRefs[key] = extraRefs.current[key].current;
-      }
+    const mainRef = React.useMemo(() => {
+      const o: any = { current: null };
+      o.get = get;
+      return o as RefMap<MainEl> & ExtraRefs & { get: (key: string) => React.RefObject<any> };
+    }, []);
 
-      return mergedRefs;
+    function mergeRefs() {
+      const merged: any = { current: mainRef.current };
+      for (const k in extraRefs.current) merged[k] = extraRefs.current[k].current;
+      return merged;
     }
 
     useEffect(() => {
       const store = cbStore();
       const reaction = store.computed(() => {
-        const mergedRefs = mergeRefs();
-        fn(mergedRefs);
+        fn(mergeRefs());
       });
-      return () => {
-        reaction.destroy();
-      };
+      return () => reaction.destroy();
     }, []);
 
-    (mainRef as any).get = get;
-    return mainRef as RefMap<MainEl> & ExtraRefs;
+    return mainRef;
   }
 
   return useComputed;
 }
-export function defineSignalComponent<T extends ReactStore<any>>(cbStore: () => T, signal: Signal<any>) {
+
+export function defineSignalComponent<T extends ReactStore<any>>(
+  cbStore: () => T,
+  signal: Signal<any>
+) {
   if ('c' in signal) return;
   const Signal = React.memo(() => {
     cbStore().useField(signal._metaPath as any);
@@ -54,14 +57,13 @@ export function defineSignalComponent<T extends ReactStore<any>>(cbStore: () => 
   });
 }
 
-
 export function defineSignalMap<T extends ReactSignalsStore<any>>(
   cbStore: () => T,
   signal: Signal<any>
 ) {
   const originMap = (signal as any).map;
 
-  const newMap = (renderFn: (item: Signal<any>, index: number) => React.ReactNode) => {
+  const newMap = (renderFn: (item: Signal<any>, index: number) => React.ReactNode, isListen: boolean = false) => {
     const cache = new Map<string, React.ReactElement<{ value: any }>>();
 
     const Component = React.memo(() => {
@@ -70,11 +72,14 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
       const _signal = store.getSignal(signal._metaPath as any);
 
       return originMap.call(_signal, (item: Signal<any>, i: number) => {
-         if (!item) return null;
+        if (!item) return null;
         const prev = cache.get(item._metaPath);
 
         if (prev && prev.props.value === item) return prev;
-        const SignalComponent = React.memo((_: { value: Signal<any> }) => renderFn(item, i));
+        const SignalComponent = React.memo((_: { value: Signal<any> }) => {
+          isListen && store.useField(item._metaPath as any);
+          return renderFn(item, i);
+        });
 
         SignalComponent.displayName = item._metaPath;
 

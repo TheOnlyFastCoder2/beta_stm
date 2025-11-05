@@ -1,26 +1,11 @@
-import { useEffect, useImperativeHandle, useState, type PropsWithChildren } from 'react';
-import type { ReactSignal, RefMap } from './types';
-import React from 'react';
-import { useSignalStore } from '.';
-
-interface ActiveProps<T> {
-  sg: ReactSignal<T>;
-  is: T;
-  children: React.ReactNode;
-}
-
-export function Active<T>({ sg, is, children }: ActiveProps<T>) {
-  const [val, set] = useState(false);
-  sg.useComputed<any>(() => {
-    set(sg.v === is);
-  });
-  return val && children;
-}
+import { type PropsWithChildren, useEffect } from 'react';
+import { useSignalStore } from '..';
+import type { ReactSignal } from '../types';
 
 export interface DraggableImpRef {
   move?: (x: ReactSignal<number>, y: ReactSignal<number>) => void;
-  startX?: number
-  startY?: number
+  startX?: number;
+  startY?: number;
 }
 
 interface DraggableProps extends PropsWithChildren {
@@ -33,11 +18,17 @@ export function Draggable({ impRef, children }: DraggableProps) {
     y: 0,
   });
 
+  useEffect(() => {
+    if (!impRef.current) impRef.current = {};
+  }, [impRef]);
+
   const ref = useComputed<HTMLDivElement>(() => {
-    impRef?.current.move?.(store.x, store.y);
+    impRef.current?.move?.(store.x, store.y);
   });
 
-  const onGrabberDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>) => {
+  const onGrabberDown = (
+    e: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>
+  ) => {
     e.stopPropagation();
     const prevX = store.x.v;
     const prevY = store.y.v;
@@ -56,11 +47,12 @@ export function Draggable({ impRef, children }: DraggableProps) {
     });
   };
 
-  useEffect(() => { 
-    store.x.v = impRef.current.startX ?? 0;
-    store.y.v = impRef.current.startY ?? 0;
-  }, [])
-  
+  useEffect(() => {
+    const curr = impRef.current;
+    store.x.v = curr?.startX ?? 0;
+    store.y.v = curr?.startY ?? 0;
+  }, [impRef, store.x, store.y]);
+
   return (
     <div
       ref={ref}
@@ -82,7 +74,10 @@ type DragCallbacks = {
   onEnd?: (event: MouseEvent | TouchEvent) => void;
 };
 
-const startDrag = (startEvent: MouseEvent | TouchEvent, { onStart, onMove, onEnd }: DragCallbacks = {}) => {
+const startDrag = (
+  startEvent: MouseEvent | TouchEvent,
+  { onStart, onMove, onEnd }: DragCallbacks = {}
+) => {
   const startPointer = getPointerEvent(startEvent);
   const startX = startPointer.clientX;
   const startY = startPointer.clientY;
@@ -98,6 +93,7 @@ const startDrag = (startEvent: MouseEvent | TouchEvent, { onStart, onMove, onEnd
   };
 
   const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
+    if (typeof window == undefined) return;
     window.removeEventListener('mousemove', handleMove);
     window.removeEventListener('mouseup', handleEnd);
     window.removeEventListener('touchmove', handleMove);
@@ -106,6 +102,7 @@ const startDrag = (startEvent: MouseEvent | TouchEvent, { onStart, onMove, onEnd
     onEnd?.(endEvent);
   };
 
+  if (typeof window == undefined) return;
   window.addEventListener('mousemove', handleMove);
   window.addEventListener('mouseup', handleEnd);
   window.addEventListener('touchmove', handleMove, { passive: false });

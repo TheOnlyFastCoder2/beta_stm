@@ -31,6 +31,7 @@ export function TodoApp() {
 
           todo={todo}
           remove={() => {
+            
             store.todos.splice(i, 1);
             // store.todos.reverse()
           }}

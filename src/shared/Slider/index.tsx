@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
-import { Draggable, type DraggableImpRef } from '../../lib/stm/react/components';
+
 import $ from './styles.module.css';
+import { Draggable, type DraggableImpRef } from '../../lib/stm/react/lib/Draggable';
 
 export default function Slider() {
   const { $: store, useComputed } = useSignalStore({

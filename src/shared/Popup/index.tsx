@@ -1,8 +1,9 @@
 import {useImperativeHandle, useRef, type PropsWithChildren } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
-import { Active } from '../../lib/stm/react/components';
+
 import DraggableTest from '../Draggable';
+import { Active } from '../../lib/stm/react/lib/Active';
 
 interface ImpRef {
   toOpen: () => void;
