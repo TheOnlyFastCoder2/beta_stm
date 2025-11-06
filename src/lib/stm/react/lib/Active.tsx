@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import type { ReactSignal } from '../types';
 
 interface ActiveProps<T> {

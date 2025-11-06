@@ -17,4 +17,12 @@
   border-radius: 8px;
   background: #f6f6f6;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
+
+  font-size: clamp(1.125rem, calc(0.339rem + 1.637vw), 1.813rem); 
+  /* min: 18px, max: 29px */ /* viewPort: 768-1440 */
+  @media (max-width:768px) {
+    font-size: clamp(0.75rem, calc(0.392rem + 1.527vw), 1.125rem); 
+    /* min: 12px, max: 18px */ /* viewPort: 375-768 */
+  }
 }

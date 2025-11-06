@@ -22,7 +22,9 @@ export default function Switcher() {
           Unknown
         </button>
       </div>
-
+       {/* { isShow = 'lol1' && (MyComponent) }
+          { isShow = 'lol2' && (MyComponent) }
+          { isShow = 'lol1'&& (MyComponent) } */}
       <Switch sg={store.mode}>
         <Switch.Case is="list">
           <div className={$.view}>📃 List view</div>
@@ -43,3 +45,4 @@ export default function Switcher() {
     </div>
   );
 }
+
