@@ -1,5 +1,6 @@
 import $ from './App.module.css';
 import { useSignalStore } from './lib/stm/react';
+import { AwaitBlock } from './shared/AwaitBlock';
 import Button from './shared/Button';
 import Draggable from './shared/Draggable';
 import Popup, { ViewerModalWins } from './shared/Popup';
@@ -20,7 +21,8 @@ function App() {
       <TodoApp />
       {/* <ViewerModalWins /> */}
       {/* <Draggable/> */ }
-      <Switcher/>
+      <Switcher />
+      <AwaitBlock name="pikachu"/>
     </div>
   );
 }
