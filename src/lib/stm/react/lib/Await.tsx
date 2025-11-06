@@ -1,4 +1,4 @@
-import React, { useImperativeHandle } from 'react';
+import React, { useImperativeHandle, useRef } from 'react';
 import { useSignalStore } from '..';
 import { Active } from './Active';
 import type { ReactSignal } from '../types';
@@ -15,6 +15,18 @@ interface GlobalStore {
 const global = createObservableState<GlobalStore>({
   subscribes: [],
 });
+
+export function useAwaitRef<T>() {
+  const ref = useRef<AwaitHandle<T>>(null);
+  return {
+    ref,
+    get run() { return ref.current?.run!; },
+    get reset() { return ref.current?.reset!; },
+    get status() { return ref.current?.status!; },
+    get value() { return ref.current?.value!; },
+    get error() { return ref.current?.error!; },
+  };
+}
 
 export const AwaitGlobal = {
   get: (selector: (s: GlobalStore) => any) => global.get(selector),
