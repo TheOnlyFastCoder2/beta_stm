@@ -35,8 +35,8 @@ export default function Button({
 
   return (
     <button {...props} className={`${$.Button} ${className}`} onClick={handleClick}>
-      <div className={ $.Button_wrapper } /> 
-      ref={ref}
+      <div className={$.Button_wrapper} ref={ref} />
+
       {children}
     </button>
   );
