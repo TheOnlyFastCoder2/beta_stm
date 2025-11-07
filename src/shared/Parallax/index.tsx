@@ -1,9 +1,8 @@
 import type { PropsWithChildren } from 'react';
 import $ from './styles.module.css';
 import React, { useEffect, useRef } from 'react';
-import type { ReactSignal } from '../../lib/stm/react/types';
 import { useSignalStore } from '../../lib/stm/react';
-import { Active } from '../../lib/stm/react/lib/Active';
+import type { ReactSignal } from '../../lib/stm/react/types';
 
 interface Props {
   children: React.ReactElement<typeof Parallax.Item> | React.ReactElement<typeof Parallax.Item>[];
@@ -34,17 +33,18 @@ export function Container() {
       <Parallax>
         {['Первый экран', 'Второй экран', 'Третий экран'].map((name) => {
           return (
-            <FadeIn duration={3000} enterAt={[[0.3, 0.6]]}  debug>
+            <FadeIn duration={3000} enterAt={[[0.3, 0.6]]} debug>
               <Parallax.Item>{name}</Parallax.Item>
             </FadeIn>
           );
         })}
       </Parallax>
 
-      <div className={$.div}>div2</div>
+      <div className={ $.div }>div2</div>
     </div>
   );
 }
+
 
 export function FadeIn({
   children,
@@ -66,13 +66,15 @@ export function FadeIn({
   });
 
   st.ratio.useComputed(() => {
-    const opacity = st.visible.v ? Math.min(1, st.ratio.v * 1.5) : Math.max(0, st.ratio.v * 0.8);
+   const opacity = st.visible.v ? Math.min(1, st.ratio.v * 1.5) : Math.max(0, st.ratio.v * 0.8);
     const el = st.ref.current;
     if (!el) return;
+
     el.style.opacity = opacity.toString();
     el.style.width = '100%';
     el.style.transition = `opacity ${duration}ms ease`;
     el.style.opacity = st.visible.v ? '1' : '0';
+    el.style.transform = `translateY(${(1 - opacity) * 20}px)`;
   });
 
   return <div ref={st.ref}>{children}</div>;
@@ -158,11 +160,9 @@ export function useVisibilitySignal<T extends HTMLElement>({
       document.body.appendChild(overlay);
     };
 
-
     timeoutId = setTimeout(() => {
       drawOverlay();
     }, 500);
-
 
     const handleResize = () => {
       if (overlay) overlay.remove();

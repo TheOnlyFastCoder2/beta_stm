@@ -7,6 +7,7 @@ import Parallax, { Container } from './shared/Parallax';
 import Popup, { ViewerModalWins } from './shared/Popup';
 import QueryExample from './shared/QueryExample';
 import Slider from './shared/Slider';
+import { SpringButton } from './shared/SpringButton';
 import Switcher from './shared/Switcher';
 import { TodoApp } from './shared/Todo';
 
@@ -24,7 +25,8 @@ function App() {
       {/* <Draggable/> */ }
       {/* <Switcher />
       <AwaitBlock name="pikachu"/> */}
-      <Container/>
+      {/* <Container /> */}
+      <SpringButton>sdfsdfsdf</SpringButton>
     </div>
   );
 }

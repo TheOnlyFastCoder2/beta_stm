@@ -1,20 +1,6 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type PropsWithChildren,
-} from 'react';
-import type {
-  Accessor,
-  CacheKey,
-  Middleware,
-  ObservableState,
-  Signal,
-  StoreWithSignals,
-} from '../types';
-import type { ReactSignalsStore, ReactStore, useStoreReturn } from './types';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
+import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
+import type { ReactSignal, ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
 import stm from '..';
 import type { LocalState, QueryInstance, QueryOptions, QueryState } from '../lib/query';
@@ -52,19 +38,14 @@ export default function createReactStore<T extends object, TParams extends objec
     defineProperty as any
   ) as any;
 
-  const getSnapshotValues = <P extends readonly Accessor<T>[]>(
-    cacheKeys: CacheKey<T>[]
-  ): useStoreReturn<T, P> => {
+  const getSnapshotValues = <P extends readonly Accessor<T>[]>(cacheKeys: CacheKey<T>[]): useStoreReturn<T, P> => {
     return cacheKeys.map((p) => store.get(p as any)) as useStoreReturn<T, P>;
   };
 
-  store.useStore = <P extends readonly Accessor<T>[]>(
-    paths: P,
-    options: { cacheKeys?: CacheKey<T>[] }
-  ) => {
+  store.useStore = <P extends readonly Accessor<T>[]>(paths: P, options: { cacheKeys?: CacheKey<T>[] }) => {
     const cacheKeys = [...paths, ...(options?.cacheKeys ?? [])];
     const snapshotRef = useRef<useStoreReturn<T, P>>(getSnapshotValues(cacheKeys));
-     const getServerSnapshot = () => snapshotRef.current;
+    const getServerSnapshot = () => snapshotRef.current;
     const getSnapshot = () => snapshotRef.current;
     const subscribe = (onChange: () => void) => {
       return store.subscribe(() => {
@@ -118,17 +99,13 @@ interface createQueryInstance<
   LocalState extends object,
   T extends object,
   TParams extends object,
-  PostData extends object = any,
+  PostData extends object = any
 > extends QueryInstance<LocalState, TParams, PostData>,
     ReactStore<LocalState> {
   useQuery: (params?: TParams) => QueryState<T>;
 }
 
-export function createQueryReact<
-  TData extends object,
-  TParams extends object = any,
-  PostData extends object = any,
->(
+export function createQueryReact<TData extends object, TParams extends object = any, PostData extends object = any>(
   data: QueryOptions<TData, TParams, PostData>,
   middlewares?: Middleware<QueryOptions<TData, TParams, PostData>>[]
 ): createQueryInstance<LocalState<TData>, TData, TParams, PostData> {
@@ -174,9 +151,7 @@ export function createSignal<T extends object>(
   return store;
 }
 
-export function useSignalStore<T extends object>(
-  initialData: T
-): ReactSignalsStore<T> & ReactStore<T> {
+export function useSignalStore<T extends object>(initialData: T): ReactSignalsStore<T> & ReactStore<T> {
   const ref = useRef<(ReactSignalsStore<T> & ReactStore<T>) | null>(null);
   if (!ref.current) {
     ref.current = initStore();
@@ -188,3 +163,4 @@ export function useSignalStore<T extends object>(
   }
   return ref.current;
 }
+

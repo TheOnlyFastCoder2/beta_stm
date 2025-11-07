@@ -1,5 +1,6 @@
 .Parallax {
-  max-width: 100vw;
+  padding: 20px;
+  max-width: 100%;
   position: relative;
   .section {
     position: sticky;
@@ -24,3 +25,6 @@
   align-items: center;
   font-size: 60px;
 }
+
+
+
