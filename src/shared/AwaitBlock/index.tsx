@@ -1,7 +1,6 @@
 import { Await, AwaitGlobal, useAwaitRef } from '../../lib/stm/react/lib/Await';
 
 function fetchPokemon(name: string) {
-
   return async () => {
     return new Promise(async (resolve, reject) => {
       try {
@@ -21,7 +20,6 @@ function fetchPokemon(name: string) {
 export function AwaitBlock({ name }: { name: string }) {
   const api = useAwaitRef<PokemonListResponse>();
 
-
   return (
     <div>
       <button onClick={() => api?.run('pikachu')}>Load Pikachu</button>
@@ -30,8 +28,9 @@ export function AwaitBlock({ name }: { name: string }) {
       <button onClick={() => api?.run('squirtle')}>Load eevee</button>
       <button onClick={() => api?.run('jigglypuff')}>Load psyduck</button>
       <button onClick={() => api?.run('snorlax')}>Load mew</button>
-      <button onClick={ () => api?.run('gengar') }>Load gengar</button>
-      
+      <button onClick={() => api?.run('gengar')}>Load gengar</button>
+      <button onClick={() => api?.run('23')}>аыва gengar</button>
+
       <button onClick={() => AwaitGlobal.invalidate('lol', ['bulbasaur'])}>invalidate</button>
 
       <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol']} isOptimistic>
@@ -50,7 +49,7 @@ export function AwaitBlock({ name }: { name: string }) {
         <Await.Catch>{(err) => <p style={{ color: 'red' }}>{err.message}</p>}</Await.Catch>
       </Await>
 
-       <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol1']} isOptimistic>
+      <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol1']} isOptimistic>
         <Await.Pending>Loading...</Await.Pending>
         <Await.Then>
           {(data: PokemonListItem) => (
