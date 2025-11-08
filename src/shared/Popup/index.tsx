@@ -1,9 +1,10 @@
-import {useImperativeHandle, useRef, type PropsWithChildren } from 'react';
+import { useImperativeHandle, useRef, type PropsWithChildren } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
 
 import DraggableTest from '../Draggable';
 import { Active } from '../../lib/stm/react/lib/Active';
+import { Spring } from '../../lib/stm/react/lib/animation/Spring';
 
 interface ImpRef {
   toOpen: () => void;
@@ -21,31 +22,53 @@ export default function Popup({ impRef, delay = 100, children, mode = 'normal' }
   const { $: st } = useSignalStore({
     isOpen: false,
     timeId: -1,
+    isAnimation: false,
   });
 
   useImperativeHandle(impRef, () => ({
-    toOpen: () => (st.isOpen.v = true),
+    toOpen: () => (st.isAnimation.v = st.isOpen.v = true),
     toClose: () => {
       if (!!~st.timeId.v) return;
-      refPopup.current?.classList.add?.($.remove);
+      st.isAnimation.v = false;
       st.timeId.v = setTimeout(() => {
-        refPopup.current?.classList.remove?.($.remove);
+        st.isAnimation.v = true;
         st.timeId.v = -1;
         st.isOpen.v = false;
       }, delay);
     },
   }));
 
-  const handleClickOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.currentTarget.classList.add($.remove);
+  const handleClickOverlay = () => {
+    st.isAnimation.v = true;
     impRef.current.toClose?.();
   };
 
   return (
     <Active sg={st.isOpen} is={true}>
-      <div onClick={handleClickOverlay} className={`${$.Popup} ${$[mode]}`} ref={refPopup}>
-        <div onClick={(e) => e.stopPropagation()} className={$.content} children={children} />
-      </div>
+      <Spring
+        isActive={st.isAnimation}
+        spring={{
+          translateY: {
+            values: { default: 100, active: 0 }, 
+            stiffness: 100,
+            damping: 12,
+          },
+          opacity: {
+            values: { default: 0, active: 1 },
+            stiffness: 120,
+            damping: 10,
+          },
+          scale: {
+            values: { default: 0.0, active: 1 },
+            stiffness: 140,
+            damping: 2,
+          },
+        }}
+      >
+        <div onClick={handleClickOverlay} className={`${$.Popup} ${$[mode]}`} ref={refPopup}>
+          <div onClick={(e) => e.stopPropagation()} className={$.content} children={children} />
+        </div>
+      </Spring>
     </Active>
   );
 }
@@ -66,7 +89,7 @@ export function ViewerModalWins() {
         <button onClick={() => (st.type.v = 'Modal2')}>Modal2</button>
       </div>
 
-      <Popup impRef={ref} mode="normal" delay={500}>
+      <Popup impRef={ref} mode="normal" delay={130}>
         <DraggableTest>
           <Active sg={st.type} is={'Modal1'}>
             <Modal1 />

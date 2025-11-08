@@ -1,80 +1,71 @@
 import { useSignalStore } from '../../lib/stm/react';
+import { Spring } from '../../lib/stm/react/lib/animation/Spring';
 import type { ReactSignal } from '../../lib/stm/react/types';
 import $ from './styles.module.css';
 
 export function SpringButton({ children }: { children: React.ReactNode }) {
-  // --- состояние ---
-  const { $: st } = useSignalStore({
-    pressed: false,
-    hover: false,
-    targetScale: 1,
-    targetRotate: 0,
-    targetDepth: 4,
-    boxScale: 1, // для квадрата
-  });
-
-  // --- реакции ---
-  const handleDown = () => {
-    st.targetScale.v = 0.9;
-    st.targetRotate.v = -5;
-    st.targetDepth.v = 2;
-    st.boxScale.v = 0; 
-  };
-
-  const handleUp = () => {
-    st.targetScale.v = 1;
-    st.targetRotate.v = 0;
-    st.targetDepth.v = 6;
-    st.boxScale.v = 1;
-  };
-
-  const handleEnter = () => {
-    st.targetScale.v = 1.05;
-    st.targetRotate.v = 3;
-    st.targetDepth.v = 8;
-  };
-
-  const handleLeave = () => {
-    st.targetScale.v = 1;
-    st.targetRotate.v = 0;
-    st.targetDepth.v = 4;
-  };
-
-
-  const springScale = useSpringSignal(st.targetScale, { stiffness: 180, damping: 15 });
-  const springRotate = useSpringSignal(st.targetRotate, { stiffness: 120, damping: 12 });
-  const springDepth = useSpringSignal(st.targetDepth, { stiffness: 160, damping: 20 });
-  const springBox = useSpringSignal(st.boxScale, { stiffness: 80, damping: 4});
-
-
-  const btnRef = springScale.useComputed<HTMLButtonElement>(({ current: btn }) => {
-    const s = springScale.v;
-    const r = springRotate.v;
-    const z = springDepth.v;
-    btn.style.transform = `scale(${s}) rotate(${r}deg)`;
-    btn.style.boxShadow = `0 ${z}px ${z * 3}px rgba(0,0,0,${0.25 + z / 40})`;
-  });
-
-
-  const boxRef = springBox.useComputed<HTMLDivElement>(({ current: box }) => {
-    const s = springBox.v;
-    box.style.transform = `scale(${s})`;
-    box.style.opacity = (s / 1.5).toFixed(2);
+  const { $: store } = useSignalStore({
+    box: false,
   });
 
   return (
     <div className={$.wrap}>
-      <div ref={boxRef} className={$.pulseBox} />
-      <button
-        ref={btnRef}
-        className={$.SpringButton}
-        onMouseDown={handleDown}
-        onMouseUp={handleUp}
-        onMouseEnter={handleEnter}
-        onMouseLeave={handleLeave}
+      <Spring
+        isActive={ store.box }
+        
+        spring={{
+          scale: {
+            values: {
+              default: 1,
+              active: 0,
+              up: 1.2,
+            },
+            stiffness: 80,
+            damping: 4,
+          },
+          translateY: {
+            values: { default: 0, active: -80 },
+             stiffness: 400,
+            damping: 20,
+          },
+          opacity: {
+            values: {
+              default: 0.8,
+              active: 0,
+              up: 1,
+            },
+            stiffness: 120,
+            damping: 8,
+          },
+        }}
       >
-        {children}
-      </button>
+        <div className={$.pulseBox} />
+      </Spring>
+
+      <Spring
+        triggers={{ hover: true, down: true, up: true }}
+        spring={{
+          scale: {
+            values: { down: 0.9, up: 1, enter: 1.05, leave: 1 },
+            stiffness: 180,
+            damping: 15,
+          },
+          rotate: {
+            values: { down: -5, up: 0, enter: 3, leave: 0 },
+            stiffness: 150,
+            damping: 18,
+          },
+          boxShadow: {
+            values: { down: 2, up: 6, enter: 10, leave: 4 },
+          },
+        }}
+        phases={['down', 'up']}
+        onToggle={() => {
+          store.box.v = !store.box.v;
+        }}
+      >
+        <button className={$.SpringButton}>{children}</button>
+      </Spring>
     </div>
   );
 }

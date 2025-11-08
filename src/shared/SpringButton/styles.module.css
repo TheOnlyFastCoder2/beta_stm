@@ -15,23 +15,21 @@
     box-shadow: 0 6px 18px rgba(30, 136, 229, 0.5);
   }
 }
+.pulseBox {
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at center, #64b5f6, #1976d2);
+  border-radius: 8px;
+  transform-origin: center;
+  will-change: transform, opacity;
+  transition: background 0.3s ease;
 
+}
 .wrap {
   display: flex;
   align-items: center;
   flex-direction: column;
   gap: 20px;
-
-  .pulseBox {
-    width: 80px;
-    height: 80px;
-    background: radial-gradient(circle at center, #64b5f6, #1976d2);
-    border-radius: 8px;
-    transform-origin: center;
-    will-change: transform, opacity;
-    transition: background 0.3s ease;
-    opacity: 0;
-  }
 
   .SpringButton {
     background: linear-gradient(145deg, #1e88e5, #1565c0);
@@ -46,8 +44,8 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     will-change: transform;
 
-    &:hover {
+    /* &:hover {
       box-shadow: 0 6px 18px rgba(30, 136, 229, 0.5);
-    }
+    } */
   }
 }

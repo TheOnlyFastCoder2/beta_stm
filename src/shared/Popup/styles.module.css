@@ -1,4 +1,4 @@
-@starting-style {
+/* @starting-style {
   .Popup {
     &,
     .content,
@@ -6,7 +6,7 @@
       opacity: 0;
     }
   }
-}
+} */
 
 .Popup {
   &.overlay {
@@ -31,10 +31,10 @@
       background: #0000003e;
     }
   }
-  &.remove {
+  /* &.remove {
     opacity: 0;
     transition: opacity 0.5s ease-out;
-  }
+  } */
 }
 
 .Viewer {

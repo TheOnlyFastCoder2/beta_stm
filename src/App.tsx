@@ -21,7 +21,7 @@ function App() {
       </Button> */}
       {/* <QueryExample /> */}
       {/* <TodoApp /> */}
-      {/* <ViewerModalWins /> */}
+   <ViewerModalWins /> 
       {/* <Draggable/> */ }
       {/* <Switcher />
       <AwaitBlock name="pikachu"/> */}

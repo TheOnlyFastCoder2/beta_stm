@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import $ from './styles.module.css';
 import React, { useEffect, useRef } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
-import type { ReactSignal } from '../../lib/stm/react/types';
+
 
 interface Props {
   children: React.ReactElement<typeof Parallax.Item> | React.ReactElement<typeof Parallax.Item>[];
