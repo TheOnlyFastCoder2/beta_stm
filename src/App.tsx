@@ -20,13 +20,16 @@ function App() {
         {store.$.count.c}
       </Button> */}
       {/* <QueryExample /> */}
-      {/* <TodoApp /> */}
-   <ViewerModalWins /> 
+      <TodoApp />
+   {/* <ViewerModalWins />  */}
       {/* <Draggable/> */ }
       {/* <Switcher />
       <AwaitBlock name="pikachu"/> */}
       {/* <Container /> */}
-      <SpringButton>sdfsdfsdf</SpringButton>
+      {/* <SpringButton>sdfsdfsdf</SpringButton> */ }
+      {/* <AwaitBlock name="pikachu"/> */ }
+      {/* <Switcher /> */}
+    {/* <SpringButton>sdfsdfsdf</SpringButton> */}
     </div>
   );
 }

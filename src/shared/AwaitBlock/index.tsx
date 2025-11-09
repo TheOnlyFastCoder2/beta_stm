@@ -8,8 +8,8 @@ function fetchPokemon(name: string) {
         if (!res.ok) throw new Error(`Failed to load pokemon ${name}`);
         const data = await res.json();
 
-        resolve(data);
-        // setTimeout(() => resolve(data), 1000);
+        // resolve(data);
+        setTimeout(() => resolve(data), 1000);
       } catch (err) {
         reject(err);
       }
@@ -35,7 +35,7 @@ export function AwaitBlock({ name }: { name: string }) {
 
       <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol']} isOptimistic>
         <Await.Pending>Loading...</Await.Pending>
-        <Await.Then>
+        <Await.Then >
           {(data: PokemonListItem) => (
             <div>
               <h2>{data.name}</h2>
@@ -49,7 +49,7 @@ export function AwaitBlock({ name }: { name: string }) {
         <Await.Catch>{(err) => <p style={{ color: 'red' }}>{err.message}</p>}</Await.Catch>
       </Await>
 
-      <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol1']} isOptimistic>
+      <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol1']} >
         <Await.Pending>Loading...</Await.Pending>
         <Await.Then>
           {(data: PokemonListItem) => (

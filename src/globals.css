@@ -8,6 +8,7 @@
 html {
   background-color: #1a1b1d;
   color: rgba(255, 255, 255, 0.679);
+    overflow-x: hidden;
 }
 
 #root {
@@ -15,7 +16,8 @@ html {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 40px;
+  height: 200vh;
+  /* padding: 40px; */
 }
 
 :root {

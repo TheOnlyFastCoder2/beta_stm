@@ -69,39 +69,3 @@ export function SpringButton({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-export function useSpringSignal(source: ReactSignal<any>, { stiffness = 170, damping = 26, precision = 0.001 } = {}) {
-  const { $: spring } = useSignalStore({
-    curr: source.v,
-  });
-
-  let velocity = 0;
-  let rafId: number | null = null;
-
-  const step = (dt: number) => {
-    const displacement = source.v - spring.curr.v;
-    const springForce = stiffness * displacement;
-    const dampingForce = damping * velocity;
-    const acceleration = (springForce - dampingForce) / 1;
-
-    velocity += acceleration * dt;
-    spring.curr.v += velocity * dt;
-    if (Math.abs(displacement) > precision || Math.abs(velocity) > precision) {
-      rafId = requestAnimationFrame(() => step(1 / 60));
-    } else {
-      spring.curr.v = source.v;
-      velocity = 0;
-    }
-  };
-
-  source.useComputed(() => {
-    source.v;
-    cancelAnimationFrame(rafId!);
-    rafId = requestAnimationFrame(() => step(1 / 60));
-    return () => {
-      rafId && cancelAnimationFrame(rafId);
-    };
-  });
-
-  return spring.curr;
-}

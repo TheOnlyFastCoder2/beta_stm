@@ -1,4 +1,4 @@
-import { useImperativeHandle, useRef, type PropsWithChildren } from 'react';
+import { useEffect, useImperativeHandle, useRef, type PropsWithChildren } from 'react';
 import { useSignalStore } from '../../lib/stm/react';
 import $ from './styles.module.css';
 
@@ -26,7 +26,11 @@ export default function Popup({ impRef, delay = 100, children, mode = 'normal' }
   });
 
   useImperativeHandle(impRef, () => ({
-    toOpen: () => (st.isAnimation.v = st.isOpen.v = true),
+   toOpen: () => {
+    st.isAnimation.v = st.isOpen.v = true;
+    window.dispatchEvent(new Event('scroll'));
+  window.dispatchEvent(new Event('resize'));
+  },
     toClose: () => {
       if (!!~st.timeId.v) return;
       st.isAnimation.v = false;
@@ -49,19 +53,19 @@ export default function Popup({ impRef, delay = 100, children, mode = 'normal' }
         isActive={st.isAnimation}
         spring={{
           translateY: {
-            values: { default: 100, active: 0 }, 
+            values: { default: 100, active: 0 },
             stiffness: 100,
             damping: 12,
           },
-          opacity: {
-            values: { default: 0, active: 1 },
-            stiffness: 120,
-            damping: 10,
-          },
           scale: {
-            values: { default: 0.0, active: 1 },
+            values: { default: 0, active: 1 },
             stiffness: 140,
             damping: 2,
+          },
+          opacity: {
+            values: { default: 0, active: 1 },
+            stiffness: 50,
+            damping: 3,
           },
         }}
       >
@@ -79,6 +83,9 @@ export function ViewerModalWins() {
     type: 'Modal1',
   });
 
+  useEffect(() => {
+    ref.current?.toOpen?.()
+  },[])
   return (
     <div className={$.Viewer}>
       <div className={$.header}>
@@ -107,7 +114,21 @@ function Modal1() {
   return (
     <div>
       <p>тут какой то текст для</p>
-      <h1>Modal1</h1>
+      <Spring
+        className={$.spring}
+        visibility={{
+          enterAt: [[0.42, 0.9]],
+          eventName: 'viewport-move',
+          debug: true,
+         
+        }}
+        spring={{
+          opacity: { values: { default: 0, active: 1 }, stiffness: 100, damping: 20 },
+          scale: { values: { default: 0, active: 1 }, stiffness: 140, damping: 20 },
+        }}
+      >
+        <h1>Modal1</h1>
+      </Spring>
     </div>
   );
 }

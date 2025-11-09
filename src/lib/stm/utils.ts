@@ -1,11 +1,8 @@
 import type {
   Accessor,
-  isUpdated,
   MetaData,
   MetaWeakMap,
-  ObservableState,
   PathSubscribers,
-  SSRStore,
   Subscribes,
   SubsMetaData,
 } from './types';

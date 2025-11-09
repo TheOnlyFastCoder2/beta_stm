@@ -1,6 +1,7 @@
 .Parallax {
-  padding: 20px;
+  /* padding: 20px; */
   max-width: 100%;
+
   position: relative;
   .section {
     position: sticky;
@@ -28,3 +29,11 @@
 
 
 
+.spring {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: red;
+
+}

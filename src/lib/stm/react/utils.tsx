@@ -1,6 +1,7 @@
-import { useRef, useEffect } from 'react';
+'use client'
+import { useRef, useEffect, memo, useMemo } from 'react';
 import type { ObservableState, Signal } from '../types';
-import React from 'react';
+
 import type { ReactSignalsStore, ReactStore, RefMap } from './types';
 
 export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T) {
@@ -16,7 +17,7 @@ export function cr_useComputed<T extends ObservableState<any>>(cbStore: () => T)
       return (extraRefs.current[key] ??= { current: null });
     };
 
-    const mainRef = React.useMemo(() => {
+    const mainRef = useMemo(() => {
       const o: any = { current: null };
       o.get = get;
       return o as RefMap<MainEl> & ExtraRefs & { get: (key: string) => React.RefObject<any> };
@@ -47,7 +48,7 @@ export function defineSignalComponent<T extends ReactStore<any>>(
   signal: Signal<any>
 ) {
   if ('c' in signal) return;
-  const Signal = React.memo(() => {
+  const Signal = memo(() => {
     cbStore().useField(signal._metaPath as any);
     return signal.v;
   });
@@ -66,7 +67,7 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
   const newMap = (renderFn: (item: Signal<any>, index: number) => React.ReactNode, isListen: boolean = false) => {
     const cache = new Map<string, React.ReactElement<{ value: any }>>();
 
-    const Component = React.memo(() => {
+    const Component = memo(() => {
       const store = cbStore();
       store.useField(signal._metaPath as any);
       const _signal = store.getSignal(signal._metaPath as any);
@@ -76,7 +77,7 @@ export function defineSignalMap<T extends ReactSignalsStore<any>>(
         const prev = cache.get(item._metaPath);
 
         if (prev && prev.props.value === item) return prev;
-        const SignalComponent = React.memo((_: { value: Signal<any> }) => {
+        const SignalComponent = memo((_: { value: Signal<any> }) => {
           isListen && store.useField(item._metaPath as any);
           return renderFn(item, i);
         });

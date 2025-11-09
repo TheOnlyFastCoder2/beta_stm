@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
+'use client';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { Accessor, CacheKey, Middleware, ObservableState, Signal, StoreWithSignals } from '../types';
 import type { ReactSignal, ReactSignalsStore, ReactStore, useStoreReturn } from './types';
 
@@ -127,8 +128,7 @@ export function createQueryReact<TData extends object, TParams extends object = 
 
 export function createSignal<T extends object>(
   data: T,
-  middlewares: Middleware<T>[] = [],
-  defineProperty?: (signal: Signal<T>) => void
+  middlewares: Middleware<T>[] = []
 ): ReactSignalsStore<T> & ReactStore<T> {
   const store: ReactSignalsStore<T> & ReactStore<T> = createReactStore(
     data,
@@ -164,3 +164,16 @@ export function useSignalStore<T extends object>(initialData: T): ReactSignalsSt
   return ref.current;
 }
 
+export function useSignal<T>(val: T): ReactSignal<T> {
+  const ref = useRef<ReactSignal<T> | null>(null);
+  if (!ref.current) {
+    ref.current = initStore();
+  }
+
+  function initStore() {
+    const store = createSignal({ curr: val }, []);
+    return store.$.curr;
+  }
+
+  return ref.current;
+}

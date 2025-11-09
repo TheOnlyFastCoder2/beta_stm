@@ -213,7 +213,7 @@ export default function createStoreWithSignals<T extends object>(
   };
 
   store.$ = createSignal(data, '');
-
+  store.createSignal = createSignal;
   store.getSignal = (accessor) => {
     const path = getPath(data, accessor);
     return signalsMap.get(path);

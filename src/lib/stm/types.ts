@@ -139,6 +139,7 @@ export type Signal<T, R extends object = {}> = T extends Primitive
 export interface StoreWithSignals<T extends object, R extends object = {}> extends ObservableState<T> {
   $: Signal<T, R>;
   getSignal: <P extends Accessor<T>>(accessor: P) => Signal<ExtractPathReturn<T, P>, R>;
+  createSignal<T>(value: T, basePath?: string): Signal<T>;
 }
 
 export type SSRStore<T extends object> = ObservableState<T> & {
