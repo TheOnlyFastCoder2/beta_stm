@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import  { Signal } from '../index';
-import { useWatch } from './react';
+import { useWatch, type TRSignal } from './react';
 
 interface ActiveProps<T> {
-  sg: Signal<any>;
+  sg: TRSignal<any>;
   is?: T | T[] | ((v: T) => boolean);
   callback?: (v: boolean) => void;
   children: React.ReactNode;

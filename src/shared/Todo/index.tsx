@@ -1,54 +1,79 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useSignalMap, useWatch } from '../../lib/_stm/react/react';
-import type { SignalMap } from '../../lib/_stm';
-import { useSignal } from '../../lib/stm/react';
+import { memo, useRef } from 'react';
+import { useSignal, useSignalMap, useWatch, type TRMapSignal, type TRSignal } from '../../lib/_stm/react/react';
 
+interface Todo {
+  title: string;
+  done: boolean;
+  id: string;
+}
 export function TodoApp() {
+  const refInput = useRef<HTMLInputElement>(null);
   const activeIndex = useSignal(0);
-  const todos = useSignalMap([
-    { title: 'Learn React', done: false },
-    { title: 'Learn TypeScript', done: false },
-  ]);
+  const todos = useSignalMap<Todo[]>([]);
 
+  const createTask = (name = `New Task ${todos.length}`) => {
+    return { id: `${performance.now()}`, title: name, done: false };
+  };
   const addTodo = () => {
-    const newTodo = { title: 'New Task', done: false };
-    todos.push(newTodo);
+    todos.push(createTask());
   };
 
   const removeTodo = () => {
     todos.pop();
   };
 
+  const reverseTodos = () => {
+    todos.reverse();
+  };
+  console.log(3232);
   return (
     <div>
       <h3>Todos</h3>
 
       <button onClick={addTodo}>Добавить задачу</button>
       <button onClick={removeTodo}>Удалить задачу</button>
+      <button onClick={reverseTodos}>reverse задачу</button>
 
-      {todos.map((todo: any, index: number) => (
-        <TodoItem
-          key={index}
-          todo={todo}
-          setActive={() => {
-            activeIndex.v = index;
-            todos.forEach((item, _i) => {
-              if (index === _i) return;
-              item.done.v = false;
-            });
-          }}
-        />
-      ))}
+      {todos.map((todo, index: number) => {
+        return (
+          <TodoItem
+            key={todo.id.v}
+            todo={todo}
+            remove={() => {
+              todos.splice(index, 1);
+            }}
+            replace={() => {
+              todos.splice(index, 1, createTask('sdfsdfsdfsdf'));
+            }}
+            setActive={() => {
+              activeIndex.v = index;
+              todos.forEach((item, _i) => {
+                if (index === _i) return;
+                item.done.v = false;
+              });
+            }}
+          />
+        );
+      })}
+      <input
+        ref={refInput}
+        type="text"
+        onChange={({ currentTarget }) => {
+          todos.v[activeIndex.v].title.v = currentTarget.value;
+        }}
+      />
     </div>
   );
 }
 
 interface TodoItemProps {
-  todo: { title: { v: string }; done: { v: boolean } };
+  todo: { title: TRMapSignal<string>; done: TRMapSignal<boolean> };
   setActive: () => void;
+  remove: () => void;
+  replace: () => void;
 }
 
-function TodoItem({ todo, setActive }: TodoItemProps) {
+const TodoItem = memo(({ todo, setActive, remove, replace }: TodoItemProps) => {
   const refInput = useRef<HTMLInputElement>(null);
   const myDiv = useRef<HTMLDivElement>(null);
 
@@ -60,7 +85,7 @@ function TodoItem({ todo, setActive }: TodoItemProps) {
   });
   return (
     <div ref={myDiv}>
-      <h4>{todo.title.v}</h4>
+      <h4>{todo.title.c}</h4>
       <input
         ref={refInput}
         type="checkbox"
@@ -70,7 +95,8 @@ function TodoItem({ todo, setActive }: TodoItemProps) {
           setActive();
         }}
       />
+      <button onClick={remove}>удалить</button>
+      <button onClick={replace}>заменить</button>
     </div>
   );
-}
-
+});

@@ -18,8 +18,8 @@ function App() {
   });
   return (
     <div className={$.App}>
-      {/* <h1>Count: {count._component}</h1>
-      <h2>Doubled: {doubled._component}</h2>
+      {/* <h1>Count: {count.c}</h1>
+      <h2>Doubled: {doubled.c}</h2>
       <button
         onClick={() => {
           ++count.v;
@@ -27,8 +27,8 @@ function App() {
         }}
       >
         +
-      </button>
-    <ViewerModalWins/> */}
+      </button> */}
+    
       {/* <SpringButton/> */ }
       {/* <AwaitBlock name='pikachu'/> */}
       <TodoApp/>

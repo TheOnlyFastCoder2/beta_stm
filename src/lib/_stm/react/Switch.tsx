@@ -64,8 +64,8 @@ Switch.Case = function Case<T>({
       is={condition}
       callback={(match) => {
         const [i, matched] = count!.v;
-        count!.v = [(i + 1) % (len ?? 1), matched + (match ? 1 : 0)];
-        isDefault!.v = count!.v[1] === 0;
+        (count as any)!.v = [((i + 1) % (len ?? 1)), (matched + (match ? 1 : 0))];
+        isDefault!.v = (count!.v as any)[1] === 0;
 
         if (count!.v[0] >= (len ?? 1) - 1) {
           count!.v = [0, 0];

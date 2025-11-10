@@ -36,7 +36,7 @@ export function batch(fn: () => void) {
   }
 }
 
-interface Link {
+export interface Link {
   source: Signal;
   target: Computed | Effect;
   nextSource?: Link;
@@ -152,6 +152,7 @@ export class Effect {
   _dirty = true;
   private disposeFn?: () => void;
   private fn: () => void | (() => void);
+  private isDisposed = false; // Флаг, указывающий, что эффект уничтожен
 
   constructor(fn: Effect['fn']) {
     this.fn = fn;
@@ -159,6 +160,9 @@ export class Effect {
   }
 
   run() {
+    // Если эффект уже уничтожен, не выполнять
+    if (this.isDisposed) return;
+
     if (this.disposeFn) this.disposeFn();
     this._sources = undefined;
     const prev = currentContext;
@@ -180,33 +184,60 @@ export class Effect {
   }
 
   dispose() {
+    this.isDisposed = true;
+    
     if (this.disposeFn) this.disposeFn();
     this._sources = undefined;
-  }
-}
 
-function wrapItemInSignals<T>(
-  item: T,
-  mdw?: (v: TSignal<any>) => void,
-  defender?: (sg:TSignal<any>) => void
-): { [key: string]: Signal<any> } | Signal<T> {
-  if (typeof item === 'object' && item !== null) {
-    const wrappedItem: any = {};
-    for (const key in item) {
-      wrappedItem[key] = new Signal(item[key], mdw);
-      defender?.(wrappedItem[key]);
-    }
-    return wrappedItem;
+    this.removeFromPendingEffects();
+    this.removeFromSources();
   }
-  const sg = new Signal(item, mdw);
-  defender?.(sg);
-  return sg;
+
+
+  private removeFromSources() {
+    let node = this._sources;
+    while (node) {
+      const prev = node.prevSource;
+      const next = node.nextSource;
+
+      if (node.source._targets) {
+        let targetNode = node.source._targets;
+        if (targetNode.target === this) {
+          if (prev) {
+            prev.nextSource = next;
+          }
+          if (next) {
+            next.prevSource = prev;
+          }
+          if (node.source._targets === node) {
+            node.source._targets = next;
+          }
+          break;
+        }
+      }
+      node = next;
+    }
+  }
+
+  private removeFromPendingEffects() {
+    if (batchedEffects) {
+      batchedEffects.delete(this);
+    }
+    if (pendingEffects) {
+      pendingEffects.delete(this);
+    }
+  }
 }
 
 
 export type Primitive = string | number | boolean | symbol | bigint | null | undefined;
 export type SignalArrayMethods<U, T, R extends object = {}> = {
-  v: Signal<T>;
+  v: TSignal<T, R>;
+  _value: TSignal<T, R>;
+  _version: 0;
+  _targets?: Link;
+  _middleware?: (v: Signal<T>) => void;
+
   push: (...items: U[]) => number;
   pop: () => TSignal<U, R> | undefined;
   shift: () => TSignal<U, R> | undefined;
@@ -214,10 +245,17 @@ export type SignalArrayMethods<U, T, R extends object = {}> = {
   splice: (start: number, deleteCount?: number, ...items: U[]) => TSignal<U, R>[];
   sort: (compareFn?: (a: TSignal<U, R>, b: TSignal<U, R>) => number) => TSignal<U, R>[];
   reverse: () => TSignal<U, R>[];
+  forEach(fn: (item: TSignal<T, R>, index: number, array: Signal<T>[]) => void): void;
+  map(fn: (item: TSignal<T, R>, index: number, array: TSignal<T, R>[]) => void): TSignal<U, R>[];
+  effectMap(fn: (item: T, index: number, array: T[]) => void | (() => void)): Effect;
 };
 
 export type SignalValue<T, R extends object = any> = {
   v: T;
+  _value: T;
+  _version: 0;
+  _targets?: Link;
+  _middleware?: (v: Signal<T>) => void;
 } & R;
 
 export type TSignal<T, R extends object = {}> = T extends Primitive
@@ -228,11 +266,28 @@ export type TSignal<T, R extends object = {}> = T extends Primitive
       [K in keyof T]: TSignal<T[K], R>;
     } & SignalValue<T, R>;
 
+function wrapItemInSignals<T>(
+  item: T,
+  mdw?: (v: TSignal<any>) => void,
+  defender?: (sg: TSignal<any>) => void
+): { [key: string]: Signal<any> } | Signal<T> {
+  if (typeof item === 'object' && item !== null) {
+    const wrappedItem: any = {};
+    for (const key in item) {
+      wrappedItem[key] = new Signal(item[key], mdw as any);
+      defender?.(wrappedItem[key]);
+    }
+    return wrappedItem;
+  }
+  const sg = new Signal(item, mdw as any);
+  defender?.(sg as any);
+  return sg;
+}
 
-export class SignalMap<T extends TSignal<any>[]> extends Signal<T[]> {
-  defender?: (sg:TSignal<any>) => void;
+export class SignalMap<T> extends Signal<T[]> {
+  defender?: (sg: TSignal<any>) => void;
   mdw?: (v: TSignal<any>) => void;
-  constructor(initial: T[] = [],mdw?: SignalMap<any>['mdw'] , defender?: SignalMap<any>['defender']) {
+  constructor(initial: T[] = [], mdw?: SignalMap<any>['mdw'], defender?: SignalMap<any>['defender']) {
     super(initial.map((item) => wrapItemInSignals(item, mdw, defender)) as any);
     this.defender = defender;
     this.mdw = mdw;
@@ -251,7 +306,6 @@ export class SignalMap<T extends TSignal<any>[]> extends Signal<T[]> {
 
   effectMap(fn: (item: T, index: number, array: T[]) => void | (() => void)) {
     return new Effect(() => {
-      console.log(this);
       const arr = this.v ?? [];
       for (let i = 0; i < arr.length; i++) {
         fn(arr[i], i, arr);
@@ -281,7 +335,9 @@ export class SignalMap<T extends TSignal<any>[]> extends Signal<T[]> {
     }
     this.v = next;
   }
-
+  get length() {
+    return (this.v ?? []).length;
+  }
   reverse() {
     const arr = this.v ?? [];
     this.v = [...arr].reverse();
@@ -320,15 +376,3 @@ export const signal = <T>(value: T) => new Signal<T>(value);
 export const signalMap = <T extends Array<T>>(value: T) => new Signal<T>(value);
 export const computed = <T>(fn: () => T) => new Computed<T>(fn);
 export const effect = (fn: () => void | (() => void)) => new Effect(fn);
-
-// const todos = new SignalMap([
-//   { title: 'Learn STM', done: false },
-//   { title: 'Learn React', done: false },
-// ]);
-
-// todos.map((todo, i) => {
-//   console.log(`Todo[${i}]:`, todo.title);
-// });
-
-// todos.push({ title: 'Learn LOL', done: false });
-// todos.v[0].title.v = '23232 Task';

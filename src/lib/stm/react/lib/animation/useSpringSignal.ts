@@ -1,9 +1,9 @@
-import type { Signal } from '../../../../_stm';
-import { useWatch } from '../../../../_stm/react/react';
+
+import { useWatch, type Sig, type TRSignal } from '../../../../_stm/react/react';
 
 export default function useSpringSignal(
-  source: Signal<any>,
-  signal: Signal<any>,
+  source: TRSignal<any>,
+  signal: TRSignal<any>,
   { stiffness = 170, damping = 26, precision = 0.001 } = {}
 ) {
   let velocity: number | number[] = 0;
@@ -15,7 +15,7 @@ export default function useSpringSignal(
   const step = (dt: number) => {
     const from = signal.v;
     const to = source.v;
-    console.log('sdfsdfffffffff');
+
     // ---- массив ----
     if (isArray(from) && isArray(to)) {
       const n = Math.min(from.length, to.length);
