@@ -207,7 +207,6 @@ function wrapItemInSignals<T>(
 export type Primitive = string | number | boolean | symbol | bigint | null | undefined;
 export type SignalArrayMethods<U, T, R extends object = {}> = {
   v: Signal<T>;
-  q: Signal<T>;
   push: (...items: U[]) => number;
   pop: () => TSignal<U, R> | undefined;
   shift: () => TSignal<U, R> | undefined;
