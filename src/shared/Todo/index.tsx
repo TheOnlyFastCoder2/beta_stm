@@ -75,3 +75,4 @@ function TodoItem({ todo, setActive }: TodoItemProps) {
     </div>
   );
 }
+
