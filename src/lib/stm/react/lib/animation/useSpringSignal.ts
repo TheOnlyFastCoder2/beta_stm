@@ -1,8 +1,9 @@
-import type { ReactSignal } from "../..";
+import type { Signal } from '../../../../_stm';
+import { useWatch } from '../../../../_stm/react/react';
 
 export default function useSpringSignal(
-  source: ReactSignal<any>,
-  signal: ReactSignal<any>,
+  source: Signal<any>,
+  signal: Signal<any>,
   { stiffness = 170, damping = 26, precision = 0.001 } = {}
 ) {
   let velocity: number | number[] = 0;
@@ -14,7 +15,7 @@ export default function useSpringSignal(
   const step = (dt: number) => {
     const from = signal.v;
     const to = source.v;
-
+    console.log('sdfsdfffffffff');
     // ---- массив ----
     if (isArray(from) && isArray(to)) {
       const n = Math.min(from.length, to.length);
@@ -27,8 +28,7 @@ export default function useSpringSignal(
         const acc = stiffness * disp - damping * (velocity[i] ?? 0);
         velocity[i] += acc * dt;
         next[i] += velocity[i] * dt;
-        if (Math.abs(disp) > precision || Math.abs(velocity[i]) > precision)
-          stillMoving = true;
+        if (Math.abs(disp) > precision || Math.abs(velocity[i]) > precision) stillMoving = true;
         else velocity[i] = 0;
       }
 
@@ -39,7 +39,7 @@ export default function useSpringSignal(
     }
 
     // ---- число ----
-    if (typeof from === "number" && typeof to === "number") {
+    if (typeof from === 'number' && typeof to === 'number') {
       const disp = to - from;
       const acc = stiffness * disp - damping * (velocity as number);
       velocity = (velocity as number) + acc * dt;
@@ -59,7 +59,8 @@ export default function useSpringSignal(
     signal.v = clone(to);
   };
 
-  source.useComputed(() => {
+  useWatch(() => {
+    source.v;
     cancelAnimationFrame(rafId!);
     rafId = requestAnimationFrame(() => step(1 / 60));
     return () => rafId && cancelAnimationFrame(rafId);

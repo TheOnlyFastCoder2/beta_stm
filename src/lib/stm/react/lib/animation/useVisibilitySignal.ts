@@ -1,15 +1,11 @@
-import { useRef, useEffect } from 'react';
-import { useSignalStore } from '../..';
+'use client';
+import { useEffect, useRef } from 'react';
+import { useSignal } from '../../../../_stm/react/react';
 
 type Range = [number, number];
 type RangeList = Range[];
 
-let globalOverlay: HTMLDivElement | null = null;
-let globalEnterLines: HTMLElement[] = [];
-let globalExitLines: HTMLElement[] = [];
-
 function ensureOverlay(enterAt: RangeList, exitAt: RangeList, debug: boolean) {
-  // создать отдельный overlay для каждого вызова
   const overlay = document.createElement('div');
   overlay.className = 'debug-overlay';
   overlay.style.cssText = `
@@ -45,7 +41,6 @@ function ensureOverlay(enterAt: RangeList, exitAt: RangeList, debug: boolean) {
       height: 1px;
       top: ${(y * 100).toFixed(2)}%;
       background: ${color};
-      color: ${color};
       opacity: ${debug ? 1 : 0};
       visibility: ${debug ? 'visible' : 'hidden'};
       transition: opacity 0.3s ease;
@@ -80,7 +75,6 @@ function ensureOverlay(enterAt: RangeList, exitAt: RangeList, debug: boolean) {
   return { overlay, enterLines, exitLines };
 }
 
-
 export default function useVisibilitySignal<T extends HTMLElement>(
   {
     enterAt = [[0, 1]],
@@ -105,111 +99,85 @@ export default function useVisibilitySignal<T extends HTMLElement>(
   },
   externalRef?: React.RefObject<HTMLElement | null>
 ) {
-  const { $: st } = useSignalStore({
-    visible: false,
-    ratio: 0,
-    overlap: 0,
-  });
-
+  const visible = useSignal(false);
+  const ratio = useSignal(0);
+  const overlap = useSignal(0);
   const ref = externalRef ?? useRef<T | null>(null);
-  function init() {
-    const el = ref.current;
-    if (!el) return () => {};
 
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const controller = new AbortController();
+    const { signal } = controller;
     const { enterLines, exitLines } = ensureOverlay(enterAt, exitAt, debug);
 
     let next: HTMLElement | null = null;
-    if (!!~watchNext) {
+    if (watchNext >= 0) {
       let parent: HTMLElement | null = el;
-      for (let i = 0; i < watchNext && parent; i++) {
-        parent = parent.parentElement;
-      }
+      for (let i = 0; i < watchNext && parent; i++) parent = parent.parentElement;
       next = parent?.nextElementSibling as HTMLElement | null;
     }
 
-    const getViewportHeight = () => document.documentElement.clientHeight || window.innerHeight;
-
-    // перед onScroll() добавим вспомогательные переменные:
+    const vh = () => document.documentElement.clientHeight || window.innerHeight;
     let showTimeout: number | null = null;
-    let isCurrentlyVisible = false;
+    let isVisibleNow = false;
 
-    // и обновим handleScroll (вместо прежнего onScroll)
     const onScroll = () => {
       const rect = el.getBoundingClientRect();
-      const vh = getViewportHeight();
       const height = rect.height || 1;
-
-      const visiblePart = Math.max(0, Math.min(rect.bottom, vh) - Math.max(rect.top, 0));
-      st.ratio.v = Math.min(1, visiblePart / height);
+      const visiblePart = Math.max(0, Math.min(rect.bottom, vh()) - Math.max(rect.top, 0));
+      ratio.v = Math.min(1, visiblePart / height);
 
       if (next) {
         const nextRect = next.getBoundingClientRect();
         const overlapPx = Math.max(0, rect.bottom - nextRect.top);
-        const overlapRatio = Math.min(1, Math.max(0, overlapPx / height));
-        st.overlap.v = overlapRatio;
+        overlap.v = Math.min(1, Math.max(0, overlapPx / height));
       } else {
-        st.overlap.v = 0;
+        overlap.v = 0;
       }
 
       const anchor = isTop ? 'top' : isBottom ? 'bottom' : 'center';
       const anchorPos = anchor === 'top' ? rect.top : anchor === 'bottom' ? rect.bottom : rect.top + height / 2;
-      const anchorRatio = anchorPos / vh;
+      const anchorRatio = anchorPos / vh();
 
       const getRange = (lines: HTMLElement[]) => {
         if (!lines.length) return [0, 0];
-        const ratios = lines.map((l) => l.getBoundingClientRect().top / vh);
+        const ratios = lines.map((l) => l.getBoundingClientRect().top / vh());
         return [Math.min(...ratios), Math.max(...ratios)];
       };
 
       const [enterMin, enterMax] = getRange(enterLines);
       const [exitMin, exitMax] = getRange(exitLines);
-      const inEnterZone = anchorRatio >= enterMin && anchorRatio <= enterMax;
-      const inExitZone = anchorRatio >= exitMin && anchorRatio <= exitMax;
+      const inEnter = anchorRatio >= enterMin && anchorRatio <= enterMax;
+      const inExit = anchorRatio >= exitMin && anchorRatio <= exitMax;
+      const shouldShow = inEnter && !inExit;
 
-      const shouldBeVisible = inEnterZone && !inExitZone;
-
-      // 👇 Логика задержки появления
-      if (shouldBeVisible && !isCurrentlyVisible) {
-        // только если впервые стал видимым
+      if (shouldShow && !isVisibleNow) {
         if (showTimeout) clearTimeout(showTimeout);
         showTimeout = window.setTimeout(() => {
-          st.visible.v = true;
-          isCurrentlyVisible = true;
-        }, delay || 150);
-      } else if (!shouldBeVisible && isCurrentlyVisible) {
-        // исчезновение — сразу
+          visible.v = true;
+          isVisibleNow = true;
+        }, delay ?? 0);
+      } else if (!shouldShow && isVisibleNow) {
         if (showTimeout) clearTimeout(showTimeout);
-        st.visible.v = false;
-        isCurrentlyVisible = false;
+        visible.v = false;
+        isVisibleNow = false;
       }
     };
 
-    if (eventName) {
-      window.addEventListener(eventName, onScroll);
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    window.addEventListener('orientationchange', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true, signal });
+    window.addEventListener('resize', onScroll, { signal });
+    window.addEventListener('orientationchange', onScroll, { signal });
+    if (eventName) window.addEventListener(eventName, onScroll, { signal });
 
     onScroll();
-    return () => {
-      window.removeEventListener('viewport-move', onScroll);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      window.removeEventListener('orientationchange', onScroll);
-      if (eventName) {
-        window.removeEventListener(eventName, onScroll);
-      }
-    };
-  }
-  useEffect(() => {
-    return init();
-  }, [enterAt, exitAt, isTop, isCenter, isBottom, watchNext, debug]);
 
-  return {
-    ref,
-    visible: st.visible,
-    ratio: st.ratio,
-    overlap: st.overlap,
-  };
+    return () => {
+      controller.abort();
+      if (showTimeout) clearTimeout(showTimeout);
+    };
+  }, [enterAt, exitAt, isTop, isCenter, isBottom, watchNext, debug, delay, eventName]);
+
+  return { ref, visible, ratio, overlap };
 }

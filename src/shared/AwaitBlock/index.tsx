@@ -1,4 +1,5 @@
-import { Await, AwaitGlobal, useAwaitRef } from '../../lib/stm/react/lib/Await';
+import { Await, AwaitGlobal, useAwaitRef } from "../../lib/_stm/react/Await";
+
 
 function fetchPokemon(name: string) {
   return async () => {
@@ -8,8 +9,8 @@ function fetchPokemon(name: string) {
         if (!res.ok) throw new Error(`Failed to load pokemon ${name}`);
         const data = await res.json();
 
-        // resolve(data);
-        setTimeout(() => resolve(data), 1000);
+        resolve(data);
+        // setTimeout(() => resolve(data), 1000);
       } catch (err) {
         reject(err);
       }
@@ -19,6 +20,7 @@ function fetchPokemon(name: string) {
 
 export function AwaitBlock({ name }: { name: string }) {
   const api = useAwaitRef<PokemonListResponse>();
+
 
   return (
     <div>
@@ -35,7 +37,7 @@ export function AwaitBlock({ name }: { name: string }) {
 
       <Await ref={api?.ref} from={fetchPokemon} params={[name, 'lol']} isOptimistic>
         <Await.Pending>Loading...</Await.Pending>
-        <Await.Then >
+        <Await.Then  >
           {(data: PokemonListItem) => (
             <div>
               <h2>{data.name}</h2>

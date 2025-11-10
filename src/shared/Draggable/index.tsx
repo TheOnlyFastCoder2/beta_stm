@@ -1,6 +1,6 @@
 import { useRef, type PropsWithChildren } from 'react';
 import $ from './styles.module.css';
-import { Draggable, type DraggableImpRef } from '../../lib/stm/react/lib/Draggable';
+import { Draggable, type DraggableImpRef } from '../../lib/_stm/react/Draggable';
 
 const event = new Event("viewport-move");
 export default function DraggableTest({ children }:PropsWithChildren) {
@@ -10,8 +10,8 @@ export default function DraggableTest({ children }:PropsWithChildren) {
   ref.current.move = (x, y) => {
     if (!refEl.current) return;
     const header = refEl.current;
-    header.style.left = `${x.v}px`;
-    header.style.top = `${y.v}px`;
+    header.style.left = `${x}px`;
+    header.style.top = `${y}px`;
     window.dispatchEvent(event);
   };
 

@@ -10,7 +10,7 @@ export function SpringButton({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={$.wrap}>
-      <Spring
+      {/* <Spring
         isActive={ store.box }
         
         spring={{
@@ -40,9 +40,10 @@ export function SpringButton({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className={$.pulseBox} />
-      </Spring>
+      </Spring> */}
 
       <Spring
+        isMove
         triggers={{ hover: true, down: true, up: true }}
         spring={{
           scale: {
@@ -60,11 +61,12 @@ export function SpringButton({ children }: { children: React.ReactNode }) {
           },
         }}
         phases={['down', 'up']}
-        onToggle={() => {
+        onToggle={ () => {
+
           store.box.v = !store.box.v;
         }}
       >
-        <button className={$.SpringButton}>{children}</button>
+        <button className={$.SpringButton}>{23}</button>
       </Spring>
     </div>
   );

@@ -1,35 +1,37 @@
+import { useRef } from 'react';
 import $ from './App.module.css';
-import { useSignalStore } from './lib/stm/react';
-import { AwaitBlock } from './shared/AwaitBlock';
-import Button from './shared/Button';
-import Draggable from './shared/Draggable';
-import Parallax, { Container } from './shared/Parallax';
+import { effect, signal } from './lib/_stm';
+import { useComputed, useWatch, useSignal } from './lib/_stm/react/react';
 import Popup, { ViewerModalWins } from './shared/Popup';
-import QueryExample from './shared/QueryExample';
-import Slider from './shared/Slider';
 import { SpringButton } from './shared/SpringButton';
 import Switcher from './shared/Switcher';
+import { AwaitBlock } from './shared/AwaitBlock';
 import { TodoApp } from './shared/Todo';
 
 function App() {
-  const store = useSignalStore({ count: 0 }); 
+  const count = useSignal(0);
+  const doubled = useComputed(() => count.v * 2);
+  const ref = useRef(doubled)
+  ref.current = doubled;
+  useWatch(() => {
+    console.log('doubled =', count.v);
+  });
   return (
-    <div className={ $.App }>
-      {/* <Slider />
-      <Button onClick={() => store.$.count.v++} className={$.MyButton}>
-        {store.$.count.c}
-      </Button> */}
-      {/* <QueryExample /> */}
-      <TodoApp />
-   {/* <ViewerModalWins />  */}
-      {/* <Draggable/> */ }
-      {/* <Switcher />
-      <AwaitBlock name="pikachu"/> */}
-      {/* <Container /> */}
-      {/* <SpringButton>sdfsdfsdf</SpringButton> */ }
-      {/* <AwaitBlock name="pikachu"/> */ }
-      {/* <Switcher /> */}
-    {/* <SpringButton>sdfsdfsdf</SpringButton> */}
+    <div className={$.App}>
+      {/* <h1>Count: {count._component}</h1>
+      <h2>Doubled: {doubled._component}</h2>
+      <button
+        onClick={() => {
+          ++count.v;
+
+        }}
+      >
+        +
+      </button>
+    <ViewerModalWins/> */}
+      {/* <SpringButton/> */ }
+      {/* <AwaitBlock name='pikachu'/> */}
+      <TodoApp/>
     </div>
   );
 }
