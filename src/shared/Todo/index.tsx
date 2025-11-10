@@ -23,11 +23,9 @@ export function TodoApp() {
     <div>
       <h3>Todos</h3>
 
-      {/* Кнопки для добавления и удаления задач */}
       <button onClick={addTodo}>Добавить задачу</button>
       <button onClick={removeTodo}>Удалить задачу</button>
 
-      {/* Используем компонент TodoItem для рендеринга задач */}
       {todos.map((todo: any, index: number) => (
         <TodoItem
           key={index}
